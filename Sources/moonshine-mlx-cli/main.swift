@@ -74,8 +74,13 @@ struct MoonshineCLI: ParsableCommand {
                 printErr(String(format: "Audio: %.1fs, %d samples", duration, audio.dim(0)))
             }
 
+            // Use generateLong for audio over 30s (rolling window, bounded memory)
+            let useLong = duration > 30.0 && !stream && !wordTimestamps && !json
+
             if stream {
                 try transcribeStreaming(moonshine: moonshine, audio: audio, duration: duration)
+            } else if useLong {
+                transcribeLong(moonshine: moonshine, audio: audio, duration: duration)
             } else if wordTimestamps {
                 transcribeWithTimestamps(moonshine: moonshine, audio: audio, duration: duration)
             } else if json {
@@ -88,6 +93,20 @@ struct MoonshineCLI: ParsableCommand {
             if !json {
                 print()
             }
+        }
+    }
+
+    // MARK: - Long Audio (Chunked)
+
+    private func transcribeLong(moonshine: MoonshineModel, audio: MLXArray, duration: Double) {
+        if verbose {
+            printErr(String(format: "Using chunked mode for %.0fs audio (rolling 15s window)", duration))
+        }
+        let result = moonshine.generateLong(audio: audio)
+        print(result.text)
+        if verbose {
+            print(String(format: "\n  Time: %.2fs | RTF: %.2fx",
+                         result.totalTime, result.totalTime / duration))
         }
     }
 

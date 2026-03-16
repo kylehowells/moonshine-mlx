@@ -29,6 +29,9 @@ public final class StreamingState: @unchecked Sendable {
     // Decoder cache (reset each transcribe)
     var decoderCache: [DecoderLayerCache]?
 
+    // Rolling window: text that has been finalized and emitted
+    var emittedSegments: [String] = []
+
     var active: Bool = false
 
     init(sampleBuffer: MLXArray? = nil) {
@@ -36,7 +39,26 @@ public final class StreamingState: @unchecked Sendable {
     }
 }
 
-// MARK: - Streaming API Extension
+// MARK: - Streaming Configuration
+
+public struct StreamingConfig: Sendable {
+    /// Maximum memory frames before the window rolls forward.
+    /// 1500 frames = 30s of audio at 50Hz encoder output.
+    public var maxMemoryFrames: Int
+
+    /// Overlap frames kept when rolling (unused in clean-segment mode).
+    public var overlapFrames: Int
+
+    public init(maxMemoryFrames: Int = 1500, overlapFrames: Int = 150) {
+        self.maxMemoryFrames = maxMemoryFrames
+        self.overlapFrames = overlapFrames
+    }
+
+    /// Default config: 30s window (matches the sweet spot for Moonshine V2).
+    public static let `default` = StreamingConfig()
+}
+
+// MARK: - Streaming API
 
 extension MoonshineModel {
 
@@ -56,6 +78,7 @@ extension MoonshineModel {
         state.memory = nil
         state.memoryLen = 0
         state.decoderCache = nil
+        state.emittedSegments = []
     }
 
     /// Stop the stream.
@@ -85,18 +108,22 @@ extension MoonshineModel {
         }
     }
 
-    /// Transcribe currently accumulated audio.
+    /// Transcribe currently accumulated audio with automatic rolling window.
+    ///
+    /// When memory exceeds `streamingConfig.maxMemoryFrames`, the window rolls
+    /// forward: the oldest portion is decoded, emitted, and dropped. This bounds
+    /// memory usage regardless of how long the stream runs.
     ///
     /// - Parameters:
-    ///   - isFinal: If true, flush all remaining frames (including lookahead)
-    ///     and automatically reset for the next segment. Frontend buffers are
-    ///     preserved so audio continuity is maintained.
-    ///   - maxTokens: Maximum tokens to generate.
+    ///   - isFinal: If true, flush all remaining frames and emit everything.
+    ///   - streamingConfig: Controls window size and overlap.
+    ///   - maxTokens: Maximum tokens per decode pass.
     ///   - temperature: Sampling temperature (0 = greedy).
-    /// - Returns: Transcribed text for the current segment.
+    /// - Returns: Newly emitted text (only the new portion, not previously emitted text).
     public func transcribe(
         _ state: StreamingState,
         isFinal: Bool = false,
+        streamingConfig: StreamingConfig = .default,
         maxTokens: Int = Int.max,
         temperature: Float = 0.0
     ) -> String {
@@ -118,14 +145,16 @@ extension MoonshineModel {
         let newFrames = stable - state.encoderFramesEmitted
 
         if newFrames <= 0 {
-            let result: String
-            if state.memoryLen > 0 {
-                result = decodeMemory(state, maxTokens: maxTokens, temperature: temperature)
-            } else {
-                result = ""
+            if isFinal, state.memoryLen > 0 {
+                let text = decodeMemory(state, maxTokens: maxTokens, temperature: temperature)
+                state.emittedSegments.append(text)
+                resetSegment(state)
+                return text
             }
             if isFinal { resetSegment(state) }
-            return result
+            return state.memoryLen > 0
+                ? decodeMemory(state, maxTokens: maxTokens, temperature: temperature)
+                : ""
         }
 
         // Encoder: sliding window with left context
@@ -149,13 +178,34 @@ extension MoonshineModel {
         }
         state.memoryLen = state.memory!.dim(1)
 
-        let text = decodeMemory(state, maxTokens: maxTokens, temperature: temperature)
+        // Rolling window: if memory exceeds max, emit this segment and reset
+        // for the next one. This bounds memory regardless of audio length.
+        var newlyEmitted = ""
+        if !isFinal && state.memoryLen > streamingConfig.maxMemoryFrames {
+            // Decode and emit the current segment
+            let text = decodeMemory(state, maxTokens: maxTokens, temperature: temperature)
+            state.emittedSegments.append(text)
+            newlyEmitted = text
 
-        if isFinal {
+            // Reset encoder/decoder state but keep frontend buffers
+            // so the next segment picks up seamlessly from the audio stream
             resetSegment(state)
+        } else if isFinal {
+            let text = decodeMemory(state, maxTokens: maxTokens, temperature: temperature)
+            state.emittedSegments.append(text)
+            newlyEmitted = text
+            resetSegment(state)
+        } else {
+            // Partial transcription for live display (not permanently emitted)
+            return decodeMemory(state, maxTokens: maxTokens, temperature: temperature)
         }
 
-        return text
+        return newlyEmitted
+    }
+
+    /// Get all text emitted so far (concatenation of all finalized segments).
+    public func getEmittedText(_ state: StreamingState) -> String {
+        state.emittedSegments.joined(separator: " ")
     }
 
     /// Reset decoder and encoder state for the next segment,
@@ -168,8 +218,6 @@ extension MoonshineModel {
         state.memory = nil
         state.memoryLen = 0
         state.decoderCache = nil
-        // Note: sampleBuffer, conv1Buffer, conv2Buffer are preserved
-        // so the next segment picks up seamlessly from the audio stream.
     }
 
     /// Auto-regressive decode from accumulated memory.
@@ -183,7 +231,6 @@ extension MoonshineModel {
         var tokens: [Int] = [config.decoderStartTokenId]
         var cache: [DecoderLayerCache]? = nil
 
-        // First token (sync)
         var tok = MLXArray(Int32(tokens.last!)).reshaped(1, 1)
         var result = decoder(tok, memory: memory, cache: cache)
         cache = result.cache
@@ -214,5 +261,75 @@ extension MoonshineModel {
         }
 
         return decodeTokens(Array(tokens.dropFirst()))
+    }
+}
+
+// MARK: - Long Audio (Offline)
+
+extension MoonshineModel {
+    /// Transcribe audio of any length by processing it in chunks through the
+    /// streaming pipeline with a rolling memory window.
+    ///
+    /// This handles hour-long files with bounded memory usage.
+    ///
+    /// - Parameters:
+    ///   - audio: Raw audio samples at 16 kHz.
+    ///   - chunkDuration: Seconds of audio to feed per chunk (default 0.5s).
+    ///   - streamingConfig: Controls memory window size.
+    /// - Returns: Full transcription.
+    public func generateLong(
+        audio: MLXArray,
+        chunkDuration: Double = 0.5,
+        streamingConfig: StreamingConfig = .default
+    ) -> TranscriptionOutput {
+        let start = CFAbsoluteTimeGetCurrent()
+
+        var input = audio
+        if input.ndim != 1 { input = input.squeezed() }
+
+        let totalSamples = input.dim(0)
+        let dur = Double(totalSamples) / Double(sampleRate)
+        let chunkSamples = Int(chunkDuration * Double(sampleRate))
+
+        let state = createStream()
+        startStream(state)
+
+        var offset = 0
+
+        while offset < totalSamples {
+            let end = min(offset + chunkSamples, totalSamples)
+            let chunk = input[offset ..< end]
+            let isLast = end >= totalSamples
+
+            addAudio(state, chunk: chunk)
+
+            // transcribe handles the rolling window internally:
+            // - when memory overflows, it emits the segment and trims
+            // - on isFinal, it emits the remaining text
+            // We discard the return value for non-emitting calls (partials).
+            _ = transcribe(
+                state, isFinal: isLast,
+                streamingConfig: streamingConfig
+            )
+
+            offset = end
+        }
+
+        // All emitted segments are collected in state.emittedSegments
+        let fullText = getEmittedText(state)
+            .trimmingCharacters(in: .whitespaces)
+        let elapsed = CFAbsoluteTimeGetCurrent() - start
+
+        let approxTokens = Int(dur * config.maxTokensPerSecond)
+
+        return TranscriptionOutput(
+            text: fullText,
+            segments: [TranscriptionSegment(
+                text: fullText, start: 0.0, end: dur, words: nil
+            )],
+            generationTokens: approxTokens,
+            totalTime: elapsed,
+            tokensPerSecond: elapsed > 0 ? Double(approxTokens) / elapsed : 0
+        )
     }
 }
