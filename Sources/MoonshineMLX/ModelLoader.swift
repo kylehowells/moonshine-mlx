@@ -100,10 +100,13 @@ public enum MoonshineModelLoader {
         return out
     }
 
-    /// Apply quantization to Linear layers.
+    /// Apply quantization to Linear layers whose dimensions are compatible.
     static func applyQuantization(model: MoonshineModel, groupSize: Int, bits: Int) {
         quantize(model: model, groupSize: groupSize, bits: bits) { _, module in
-            module is Linear
+            guard let linear = module as? Linear else { return false }
+            // Skip layers where the weight's last dimension isn't divisible by group size
+            // (e.g. the embedder's Linear(80, 320) where 80 % 64 != 0)
+            return linear.weight.dim(-1) % groupSize == 0
         }
     }
 

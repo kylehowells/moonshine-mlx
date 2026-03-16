@@ -50,7 +50,7 @@ final class AsinhCompression: Module, @unchecked Sendable {
 public final class Embedder: Module, @unchecked Sendable {
     let cmvn: FrameCMVN
     let comp: AsinhCompression
-    let linear: Linear
+    @ModuleInfo var linear: Linear
     let conv1: Conv1d
     let conv2: Conv1d
     let frameLen: Int
@@ -64,7 +64,7 @@ public final class Embedder: Module, @unchecked Sendable {
 
         self.cmvn = FrameCMVN()
         self.comp = AsinhCompression()
-        self.linear = Linear(ec.frameLen, dim, bias: false)
+        self._linear.wrappedValue = Linear(ec.frameLen, dim, bias: false)
         self.conv1 = Conv1d(inputChannels: dim, outputChannels: 2 * dim, kernelSize: 5, stride: 2, bias: true)
         self.conv2 = Conv1d(inputChannels: 2 * dim, outputChannels: dim, kernelSize: 5, stride: 2, bias: true)
     }

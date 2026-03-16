@@ -7,7 +7,7 @@ import MLXNN
 public final class MoonshineDecoder: Module, @unchecked Sendable {
     let embed_tokens: Embedding
     let pos_emb: Embedding
-    let proj: Linear?
+    @ModuleInfo var proj: Linear?
     let layers: [DecoderLayer]
     let norm: LayerNorm
 
@@ -24,9 +24,9 @@ public final class MoonshineDecoder: Module, @unchecked Sendable {
         self.pos_emb = Embedding(embeddingCount: config.maxPositionEmbeddings, dimensions: encDim)
 
         if encDim != decDim {
-            self.proj = Linear(encDim, decDim, bias: false)
+            self._proj.wrappedValue = Linear(encDim, decDim, bias: false)
         } else {
-            self.proj = nil
+            self._proj.wrappedValue = nil
         }
 
         self.layers = (0 ..< config.numHiddenLayers).map { _ in

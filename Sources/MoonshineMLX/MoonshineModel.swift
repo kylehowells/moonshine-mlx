@@ -27,7 +27,7 @@ public final class MoonshineModel: Module, @unchecked Sendable {
 
     public let encoder: MoonshineEncoder
     public let decoder: MoonshineDecoder
-    let proj_out: Linear
+    @ModuleInfo var proj_out: Linear
 
     public var tokenizer: MoonshineTokenizer?
 
@@ -38,7 +38,7 @@ public final class MoonshineModel: Module, @unchecked Sendable {
         self.config = config
         self.encoder = MoonshineEncoder(config: config)
         self.decoder = MoonshineDecoder(config: config)
-        self.proj_out = Linear(config.hiddenSize, config.vocabSize, bias: false)
+        self._proj_out.wrappedValue = Linear(config.hiddenSize, config.vocabSize, bias: false)
     }
 
     public var sampleRate: Int { config.encoder.sampleRate }

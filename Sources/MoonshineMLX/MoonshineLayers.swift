@@ -16,10 +16,10 @@ final class MoonshineAttention: Module, @unchecked Sendable {
     let rotary_ndims: Int
     let ropeBase: Float
 
-    let q_proj: Linear
-    let k_proj: Linear
-    let v_proj: Linear
-    let o_proj: Linear
+    @ModuleInfo var q_proj: Linear
+    @ModuleInfo var k_proj: Linear
+    @ModuleInfo var v_proj: Linear
+    @ModuleInfo var o_proj: Linear
 
     init(
         inputDim: Int,
@@ -41,10 +41,10 @@ final class MoonshineAttention: Module, @unchecked Sendable {
         let attnDim = numHeads * headDim
         let kvDim = numKVHeads * headDim
 
-        self.q_proj = Linear(inputDim, attnDim, bias: false)
-        self.k_proj = Linear(inputDim, kvDim, bias: false)
-        self.v_proj = Linear(inputDim, kvDim, bias: false)
-        self.o_proj = Linear(attnDim, inputDim, bias: false)
+        self._q_proj.wrappedValue = Linear(inputDim, attnDim, bias: false)
+        self._k_proj.wrappedValue = Linear(inputDim, kvDim, bias: false)
+        self._v_proj.wrappedValue = Linear(inputDim, kvDim, bias: false)
+        self._o_proj.wrappedValue = Linear(attnDim, inputDim, bias: false)
 
         self.use_rope = useRope
         if useRope {
@@ -138,7 +138,7 @@ final class MoonshineAttention: Module, @unchecked Sendable {
             // Always use fused SDPA. When no mask is provided, pass a scalar
             // zero mask to avoid an mlx-swift kernel bug that produces NaN for
             // maskless attention with S > ~1024.
-            let sdpaMask = attnMask ?? MLXArray.zeros([q.dim(2), kExpanded.dim(2)])
+            let sdpaMask = attnMask ?? MLXArray.zeros([q.dim(2), kExpanded.dim(2)]).asType(q.dtype)
             o = MLXFast.scaledDotProductAttention(
                 queries: q, keys: kExpanded, values: vExpanded,
                 scale: scale, mask: sdpaMask
@@ -153,12 +153,12 @@ final class MoonshineAttention: Module, @unchecked Sendable {
 // MARK: - MLPs
 
 final class EncoderMLP: Module, @unchecked Sendable {
-    let fc1: Linear
-    let fc2: Linear
+    @ModuleInfo var fc1: Linear
+    @ModuleInfo var fc2: Linear
 
     init(hiddenSize: Int, intermediateSize: Int) {
-        self.fc1 = Linear(hiddenSize, intermediateSize, bias: true)
-        self.fc2 = Linear(intermediateSize, hiddenSize, bias: true)
+        self._fc1.wrappedValue = Linear(hiddenSize, intermediateSize, bias: true)
+        self._fc2.wrappedValue = Linear(intermediateSize, hiddenSize, bias: true)
     }
 
     func callAsFunction(_ x: MLXArray) -> MLXArray {
@@ -167,14 +167,14 @@ final class EncoderMLP: Module, @unchecked Sendable {
 }
 
 final class DecoderMLP: Module, @unchecked Sendable {
-    let fc1: Linear
-    let fc2: Linear
+    @ModuleInfo var fc1: Linear
+    @ModuleInfo var fc2: Linear
     let intermediateSize: Int
 
     init(hiddenSize: Int, intermediateSize: Int) {
         self.intermediateSize = intermediateSize
-        self.fc1 = Linear(hiddenSize, 2 * intermediateSize, bias: true)
-        self.fc2 = Linear(intermediateSize, hiddenSize, bias: true)
+        self._fc1.wrappedValue = Linear(hiddenSize, 2 * intermediateSize, bias: true)
+        self._fc2.wrappedValue = Linear(intermediateSize, hiddenSize, bias: true)
     }
 
     func callAsFunction(_ x: MLXArray) -> MLXArray {
