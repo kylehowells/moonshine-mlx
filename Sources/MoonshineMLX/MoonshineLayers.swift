@@ -153,13 +153,9 @@ final class MoonshineAttention: Module, @unchecked Sendable {
             o = w.matmul(vExpanded)
             crossQK = qk
         } else {
-            // Always use fused SDPA. When no mask is provided, pass a scalar
-            // zero mask to avoid an mlx-swift kernel bug that produces NaN for
-            // maskless attention with S > ~1024.
-            let sdpaMask = attnMask ?? MLXArray.zeros([q.dim(2), kExpanded.dim(2)]).asType(q.dtype)
             o = MLXFast.scaledDotProductAttention(
                 queries: q, keys: kExpanded, values: vExpanded,
-                scale: scale, mask: sdpaMask
+                scale: scale, mask: attnMask
             )
         }
 
