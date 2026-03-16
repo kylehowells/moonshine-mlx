@@ -1,4 +1,9 @@
-# MLXFast.scaledDotProductAttention NaN without mask (mlx-swift 0.30.6)
+# MLXFast.scaledDotProductAttention NaN without mask (FIXED)
+
+> **Status: Fixed.** MLX C++ commit `99ca62c4` ("Fix 2pass sdpa on < M2") resolves this.
+> The fix is included in mlx-swift 0.30.6's MLX C++ submodule. If you still see this
+> issue, ensure you've done a clean rebuild (`swift package clean && swift build -c release`)
+> so the metallib is recompiled with the fix.
 
 ## Summary
 
