@@ -32,8 +32,8 @@ struct MoonshineCLI: ParsableCommand {
     @Option(name: .long, help: "Sampling temperature (0 = greedy).")
     var temperature: Float = 0.0
 
-    @Option(name: .long, help: "Maximum tokens to generate per segment.")
-    var maxTokens: Int = 500
+    @Option(name: .long, help: "Maximum tokens to generate per segment (default: unlimited, capped by audio duration).")
+    var maxTokens: Int = Int.max
 
     @Flag(name: .long, help: "Print verbose timing information.")
     var verbose: Bool = false

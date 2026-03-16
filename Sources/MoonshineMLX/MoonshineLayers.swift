@@ -86,7 +86,6 @@ final class MoonshineAttention: Module, @unchecked Sendable {
             k = cache.0
             v = cache.1
         } else {
-            // Compute K/V from input (self-attention or first cross-attention call)
             let kvInput = encoderHiddenStates ?? x
             let S = kvInput.dim(1)
             k = k_proj(kvInput).reshaped(B, S, num_kv_heads, head_dim).transposed(0, 2, 1, 3)
@@ -135,11 +134,17 @@ final class MoonshineAttention: Module, @unchecked Sendable {
             let w = softmax(qk, axis: -1)
             o = w.matmul(vExpanded)
             crossQK = qk
-        } else {
+        } else if attnMask != nil {
             o = MLXFast.scaledDotProductAttention(
                 queries: q, keys: kExpanded, values: vExpanded,
                 scale: scale, mask: attnMask
             )
+        } else {
+            // Manual attention for cross-attention (no mask needed)
+            // Avoids potential MLXFast kernel issues with certain sizes
+            let qk = q.matmul(kExpanded.transposed(0, 1, 3, 2)) * scale
+            let w = softmax(qk, axis: -1)
+            o = w.matmul(vExpanded)
         }
 
         let out = o.transposed(0, 2, 1, 3).reshaped(B, T, -1)
@@ -248,19 +253,33 @@ final class EncoderLayer: Module, @unchecked Sendable {
 
     private func slidingMask(seqLen: Int) -> MLXArray? {
         guard let windowLeft, let windowRight else { return nil }
-        // Cache the mask if seq length hasn't changed
         if seqLen == _cachedMaskLen, let cached = _cachedMask { return cached }
+        // Build mask with explicit Float computation to avoid type issues
         let pos = MLXArray(0 ..< Int32(seqLen))
-        let diff = expandedDimensions(pos, axis: 1) - expandedDimensions(pos, axis: 0)
-        let wl = MLXArray(Int32(windowLeft))
-        let wr = MLXArray(Int32(windowRight))
-        let leftValid = (diff .>= 0) .&& (diff .< wl)
-        let rightValid = (diff .< 0) .&& ((-diff) .< wr)
-        let valid = leftValid .|| rightValid
-        let mask = which(valid, MLXArray(Float(0.0)), MLXArray(Float(-1e9)))
+        let qPos = expandedDimensions(pos, axis: 1)  // [seqLen, 1]
+        let kPos = expandedDimensions(pos, axis: 0)  // [1, seqLen]
+        let diff = qPos - kPos  // [seqLen, seqLen] int32
+
+        // For each (q, k): valid if (q-k) in [0, windowLeft) OR (k-q) in (0, windowRight)
+        var mask: MLXArray
+        if windowRight > 0 {
+            let leftOK = (diff .>= 0) .&& (diff .< Int32(windowLeft))
+            let rightOK = (diff .< 0) .&& ((-diff) .< Int32(windowRight))
+            mask = which(leftOK .|| rightOK, MLXArray(Float(0.0)), MLXArray(Float(-1e9)))
+        } else {
+            // No right context - simpler mask
+            let valid = (diff .>= 0) .&& (diff .< Int32(windowLeft))
+            mask = which(valid, MLXArray(Float(0.0)), MLXArray(Float(-1e9)))
+        }
+        eval(mask)  // Force materialization to avoid lazy graph issues
         _cachedMask = mask
         _cachedMaskLen = seqLen
         return mask
+    }
+
+    func clearMaskCache() {
+        _cachedMask = nil
+        _cachedMaskLen = 0
     }
 
     func callAsFunction(_ x: MLXArray) -> MLXArray {

@@ -93,7 +93,7 @@ extension MoonshineModel {
     public func transcribe(
         _ state: StreamingState,
         isFinal: Bool = false,
-        maxTokens: Int = 256,
+        maxTokens: Int = Int.max,
         temperature: Float = 0.0
     ) -> String {
         let ec = config.encoder

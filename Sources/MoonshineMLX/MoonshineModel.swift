@@ -105,7 +105,7 @@ public final class MoonshineModel: Module, @unchecked Sendable {
 
     public func generate(
         audio: MLXArray,
-        maxTokens: Int = 500,
+        maxTokens: Int = Int.max,
         temperature: Float = 0.0,
         profile: Bool = false
     ) -> TranscriptionOutput {
@@ -119,10 +119,31 @@ public final class MoonshineModel: Module, @unchecked Sendable {
 
         // Encode
         let features = encoder.embedder(input)
+        eval(features)
         let encoded = encoder(features)
+        eval(encoded)
         let memory = decoder.prepareMemory(encoded)
         eval(memory)
         let tEncode = CFAbsoluteTimeGetCurrent() - start
+
+        if profile {
+            let hasNanF = MLX.any(MLX.isNaN(features)).item(Bool.self)
+            let hasNanE = MLX.any(MLX.isNaN(encoded)).item(Bool.self)
+            let hasNanM = MLX.any(MLX.isNaN(memory)).item(Bool.self)
+            FileHandle.standardError.write(Data("  features: \(features.shape) nan=\(hasNanF) range=[\(features.min().item(Float.self)),\(features.max().item(Float.self))]\n  encoded: \(encoded.shape) nan=\(hasNanE) range=[\(encoded.min().item(Float.self)),\(encoded.max().item(Float.self))]\n  memory: \(memory.shape) nan=\(hasNanM) range=[\(memory.min().item(Float.self)),\(memory.max().item(Float.self))]\n".utf8))
+            // Check decoder components
+            let T = memory.dim(1)
+            let testTok = MLXArray(Int32(config.decoderStartTokenId)).reshaped(1, 1)
+            let emb = decoder.embed_tokens(testTok)
+            eval(emb)
+            let embNan = MLX.any(MLX.isNaN(emb)).item(Bool.self)
+            // First decoder layer
+            let firstLayerResult = decoder.layers[0](emb, memory: memory)
+            eval(firstLayerResult.hidden)
+            let l0Nan = MLX.any(MLX.isNaN(firstLayerResult.hidden)).item(Bool.self)
+            let l0Range = "[\(firstLayerResult.hidden.min().item(Float.self)),\(firstLayerResult.hidden.max().item(Float.self))]"
+            FileHandle.standardError.write(Data("  embed: nan=\(embNan)  layer0: nan=\(l0Nan) range=\(l0Range)\n".utf8))
+        }
 
         let dur = Double(input.dim(0)) / Double(sampleRate)
         let maxTok = min(maxTokens, Int(ceil(dur * config.maxTokensPerSecond)))
@@ -144,6 +165,13 @@ public final class MoonshineModel: Module, @unchecked Sendable {
         }
         eval(nextTokArr)
         let tFirst = CFAbsoluteTimeGetCurrent() - tFirstStart
+
+        if profile {
+            let firstTok = nextTokArr.item(Int.self)
+            let logMin = logits.min().item(Float.self)
+            let logMax = logits.max().item(Float.self)
+            FileHandle.standardError.write(Data("  first_token_id=\(firstTok) logits=[\(logMin),\(logMax)]\n".utf8))
+        }
 
         // Remaining tokens with async eval pipelining
         let tDecodeStart = CFAbsoluteTimeGetCurrent()
@@ -205,7 +233,7 @@ public final class MoonshineModel: Module, @unchecked Sendable {
 
     public func generateWithWordTimestamps(
         audio: MLXArray,
-        maxTokens: Int = 500,
+        maxTokens: Int = Int.max,
         timeOffset: Double = 0.0
     ) -> (output: TranscriptionOutput, words: [WordTiming]) {
         let start = CFAbsoluteTimeGetCurrent()
