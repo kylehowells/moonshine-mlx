@@ -19,47 +19,36 @@ final class RotaryEmbedding: Module, @unchecked Sendable {
             MLXArray(base),
             MLXArray(stride(from: 0, to: dim, by: 2).map { Float($0) / Float(dim) })
         )
-        // positionIds: [B, T] -> [B, T, 1]
         let ids = positionIds.expandedDimensions(axis: -1).asType(.float32)
-        // invFreq: [dim/2] -> [1, 1, dim/2]
         let freq = invFreq.reshaped(1, 1, -1)
-        let freqs = ids * freq  // [B, T, dim/2]
-        let emb = concatenated([freqs, freqs], axis: -1)  // [B, T, dim]
+        let freqs = ids * freq
+        let emb = concatenated([freqs, freqs], axis: -1)
         return (MLX.cos(emb), MLX.sin(emb))
     }
 }
 
-func rotateHalf(_ x: MLXArray) -> MLXArray {
+private func rotateHalf(_ x: MLXArray) -> MLXArray {
     let x1 = x[.ellipsis, .stride(from: 0, by: 2)]
     let x2 = x[.ellipsis, .stride(from: 1, by: 2)]
     return stacked([-x2, x1], axis: -1).reshaped(x.shape)
 }
 
-func applyRotaryPosEmb(
-    q: MLXArray, k: MLXArray,
-    cos: MLXArray, sin: MLXArray
+private func applyRotaryPosEmb(
+    q: MLXArray, k: MLXArray, cos: MLXArray, sin: MLXArray
 ) -> (MLXArray, MLXArray) {
-    // cos, sin: [B, T, D] -> [B, 1, T, D] for broadcasting with [B, H, T, D]
     var c = cos.expandedDimensions(axis: 1)
     var s = sin.expandedDimensions(axis: 1)
     let half = c.dim(-1) / 2
     c = MLX.repeated(c[.ellipsis, ..<half], count: 2, axis: -1)
     s = MLX.repeated(s[.ellipsis, ..<half], count: 2, axis: -1)
-
     let rotDim = c.dim(-1)
-
     let qRot = q[.ellipsis, ..<rotDim]
     let qPass = q[.ellipsis, rotDim...]
     let kRot = k[.ellipsis, ..<rotDim]
     let kPass = k[.ellipsis, rotDim...]
-
     let qOut = qRot * c + rotateHalf(qRot) * s
     let kOut = kRot * c + rotateHalf(kRot) * s
-
-    return (
-        concatenated([qOut, qPass], axis: -1),
-        concatenated([kOut, kPass], axis: -1)
-    )
+    return (concatenated([qOut, qPass], axis: -1), concatenated([kOut, kPass], axis: -1))
 }
 
 // MARK: - Attention
@@ -108,10 +97,10 @@ final class MoonshineAttention: Module, @unchecked Sendable {
 
         self.use_rope = useRope
         if useRope {
-            var rotNdims = Int(Double(headDim) * partialRotaryFactor)
-            rotNdims -= rotNdims % 2
-            self.rotary_ndims = rotNdims
-            self.rotary_emb = RotaryEmbedding(dim: rotNdims, base: Float(ropeTheta))
+            var nd = Int(Double(headDim) * partialRotaryFactor)
+            nd -= nd % 2
+            self.rotary_ndims = nd
+            self.rotary_emb = RotaryEmbedding(dim: nd, base: Float(ropeTheta))
         } else {
             self.rotary_ndims = 0
             self.rotary_emb = nil
@@ -129,7 +118,6 @@ final class MoonshineAttention: Module, @unchecked Sendable {
         _ x: MLXArray,
         encoderHiddenStates: MLXArray? = nil,
         cache: (MLXArray, MLXArray)? = nil,
-        positionIds: MLXArray? = nil,
         mask: MLXArray? = nil,
         returnWeights: Bool = false
     ) -> Output {
@@ -148,13 +136,8 @@ final class MoonshineAttention: Module, @unchecked Sendable {
         v = v.reshaped(B, S, num_kv_heads, head_dim).transposed(0, 2, 1, 3)
 
         if use_rope && !isCross {
-            let ids: MLXArray
-            if let positionIds {
-                ids = positionIds
-            } else {
-                let offset = cache?.0.dim(2) ?? 0
-                ids = MLXArray(Int32(offset) ..< Int32(offset + T)).reshaped(1, T)
-            }
+            let offset = cache?.0.dim(2) ?? 0
+            let ids = MLXArray(Int32(offset) ..< Int32(offset + T)).reshaped(1, T)
             let (cos, sin) = rotary_emb!(positionIds: ids)
             (q, k) = applyRotaryPosEmb(q: q, k: k, cos: cos, sin: sin)
         }
@@ -178,31 +161,25 @@ final class MoonshineAttention: Module, @unchecked Sendable {
 
         var attnMask = mask
         if is_causal && T > 1 {
-            let causal = MultiHeadAttention.createAdditiveCausalMask(T)
+            var causal = MultiHeadAttention.createAdditiveCausalMask(T)
+            if causal.dtype != q.dtype { causal = causal.asType(q.dtype) }
             let kLen = kExpanded.dim(2)
-            var causalFull: MLXArray
             if kLen > T {
-                let prefix = MLXArray.zeros([T, kLen - T])
-                causalFull = concatenated([prefix, causal], axis: 1)
+                let prefix = MLXArray.zeros([T, kLen - T]).asType(q.dtype)
+                attnMask = concatenated([prefix, causal], axis: 1)
             } else {
-                causalFull = causal
-            }
-            if let existing = attnMask {
-                attnMask = existing + causalFull
-            } else {
-                attnMask = causalFull
+                attnMask = causal
             }
         }
 
         var crossQK: MLXArray? = nil
-        var o: MLXArray
+        let o: MLXArray
 
         if returnWeights && isCross {
-            // Compute attention weights explicitly for timestamp extraction
-            let qk = (q.matmul(kExpanded.transposed(0, 1, 3, 2))) * MLXArray(scale)
+            let qk = q.matmul(kExpanded.transposed(0, 1, 3, 2)) * scale
             let w = softmax(qk, axis: -1)
             o = w.matmul(vExpanded)
-            crossQK = qk  // [B, H, T, S] raw scores
+            crossQK = qk
         } else {
             o = MLXFast.scaledDotProductAttention(
                 queries: q, keys: kExpanded, values: vExpanded,
@@ -210,8 +187,8 @@ final class MoonshineAttention: Module, @unchecked Sendable {
             )
         }
 
-        o = o.transposed(0, 2, 1, 3).reshaped(B, T, -1)
-        return Output(output: o_proj(o), keyCache: k, valueCache: v, crossQK: crossQK)
+        let out = o.transposed(0, 2, 1, 3).reshaped(B, T, -1)
+        return Output(output: o_proj(out), keyCache: k, valueCache: v, crossQK: crossQK)
     }
 }
 
@@ -232,7 +209,6 @@ final class EncoderMLP: Module, @unchecked Sendable {
 }
 
 final class DecoderMLP: Module, @unchecked Sendable {
-    /// SwiGLU: fc1 -> split(x, gate) -> silu(gate) * x -> fc2
     let fc1: Linear
     let fc2: Linear
 
@@ -250,8 +226,7 @@ final class DecoderMLP: Module, @unchecked Sendable {
 
 // MARK: - Layer Normalization
 
-/// LayerNorm with unit offset: gamma is stored near 0, and 1.0 is added at runtime.
-/// Matches HuggingFace MoonshineStreamingLayerNorm (weight key: *.gamma -> *.weight after sanitize).
+/// LayerNorm with unit offset: gamma stored near 0, 1.0 added at runtime.
 final class UnitOffsetLayerNorm: Module, @unchecked Sendable {
     var weight: MLXArray
     let dims: Int
@@ -279,6 +254,8 @@ final class EncoderLayer: Module, @unchecked Sendable {
 
     let windowLeft: Int?
     let windowRight: Int?
+    private var _cachedMask: MLXArray?
+    private var _cachedMaskLen: Int = 0
 
     init(config: MoonshineModelConfig, layerIdx: Int) {
         let ec = config.encoder
@@ -302,6 +279,8 @@ final class EncoderLayer: Module, @unchecked Sendable {
 
     private func slidingMask(seqLen: Int) -> MLXArray? {
         guard let windowLeft, let windowRight else { return nil }
+        // Cache the mask if seq length hasn't changed
+        if seqLen == _cachedMaskLen, let cached = _cachedMask { return cached }
         let pos = MLXArray(0 ..< Int32(seqLen))
         let diff = expandedDimensions(pos, axis: 1) - expandedDimensions(pos, axis: 0)
         let wl = MLXArray(Int32(windowLeft))
@@ -309,11 +288,18 @@ final class EncoderLayer: Module, @unchecked Sendable {
         let leftValid = (diff .>= 0) .&& (diff .< wl)
         let rightValid = (diff .< 0) .&& ((-diff) .< wr)
         let valid = leftValid .|| rightValid
-        return which(valid, MLXArray(Float(0.0)), MLXArray(Float(-1e9)))
+        let mask = which(valid, MLXArray(Float(0.0)), MLXArray(Float(-1e9)))
+        _cachedMask = mask
+        _cachedMaskLen = seqLen
+        return mask
     }
 
     func callAsFunction(_ x: MLXArray) -> MLXArray {
-        let mask = slidingMask(seqLen: x.dim(1))
+        var mask = slidingMask(seqLen: x.dim(1))
+        // Ensure mask dtype matches input for scaledDotProductAttention
+        if let m = mask, m.dtype != x.dtype {
+            mask = m.asType(x.dtype)
+        }
         var out = x
         let normed1 = input_layernorm(out)
         let attnResult = self_attn(normed1, mask: mask)
@@ -370,12 +356,10 @@ final class DecoderLayer: Module, @unchecked Sendable {
     ) -> Output {
         var out = x
 
-        // Self-attention
         let normed1 = input_layernorm(out)
         let selfResult = self_attn(normed1, cache: selfCache)
         out = out + selfResult.output
 
-        // Cross-attention
         let normed2 = post_attention_layernorm(out)
         let crossResult = encoder_attn(
             normed2, encoderHiddenStates: memory,
@@ -383,7 +367,6 @@ final class DecoderLayer: Module, @unchecked Sendable {
         )
         out = out + crossResult.output
 
-        // FFN
         let normed3 = final_layernorm(out)
         out = out + mlp(normed3)
 

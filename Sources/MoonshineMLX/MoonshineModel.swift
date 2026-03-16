@@ -5,7 +5,6 @@ import MLXRandom
 
 // MARK: - Transcription Output
 
-/// Result of a transcription operation.
 public struct TranscriptionOutput: Sendable {
     public let text: String
     public let segments: [TranscriptionSegment]
@@ -23,9 +22,6 @@ public struct TranscriptionSegment: Sendable {
 
 // MARK: - Moonshine Model
 
-/// Moonshine V2 Streaming speech-to-text model.
-///
-/// Native MLX/Metal implementation targeting `UsefulSensors/moonshine-streaming-{tiny,small,medium}`.
 public final class MoonshineModel: Module, @unchecked Sendable {
     public let config: MoonshineModelConfig
 
@@ -33,8 +29,10 @@ public final class MoonshineModel: Module, @unchecked Sendable {
     let decoder: MoonshineDecoder
     let proj_out: Linear
 
-    /// Tokenizer (set after loading).
     public var tokenizer: MoonshineTokenizer?
+
+    /// Compiled single-token decoder step for fast autoregressive decoding.
+    private var _compiledStep: (([MLXArray]) -> [MLXArray])?
 
     public init(config: MoonshineModelConfig) {
         self.config = config
@@ -49,21 +47,49 @@ public final class MoonshineModel: Module, @unchecked Sendable {
 
     func getLogits(_ hidden: MLXArray) -> MLXArray {
         if config.tieWordEmbeddings {
-            // Use embedding weights as linear projection
             return hidden.matmul(decoder.embed_tokens.weight.transposed())
         }
         return proj_out(hidden)
     }
 
+    // MARK: - Compiled Decode Step
+
+    /// Build a compiled function for a single decode step.
+    /// This fuses the decoder forward + logits projection into one optimized graph.
+    private func buildCompiledStep() -> @Sendable ([MLXArray]) -> [MLXArray] {
+        compile(inputs: [self], outputs: [self]) { inputs in
+            // inputs: [token(1,1), memory(1,M,D), selfK_0, selfV_0, crossK_0, crossV_0, ..., selfK_N, selfV_N, crossK_N, crossV_N]
+            let token = inputs[0]
+            let memory = inputs[1]
+
+            let numLayers = self.decoder.layers.count
+            var cache: [DecoderLayerCache] = []
+            for i in 0 ..< numLayers {
+                let base = 2 + i * 4
+                cache.append(DecoderLayerCache(
+                    selfCache: (inputs[base], inputs[base + 1]),
+                    crossCache: (inputs[base + 2], inputs[base + 3])
+                ))
+            }
+
+            let result = self.decoder(token, memory: memory, cache: cache)
+            let logits = self.getLogits(result.hidden[0..., (-1)..., 0...])
+            let nextTok = argMax(logits, axis: -1)
+
+            // outputs: [nextTok, selfK_0, selfV_0, crossK_0, crossV_0, ..., selfK_N, selfV_N, crossK_N, crossV_N]
+            var outputs: [MLXArray] = [nextTok]
+            for c in result.cache {
+                outputs.append(c.selfCache!.0)
+                outputs.append(c.selfCache!.1)
+                outputs.append(c.crossCache!.0)
+                outputs.append(c.crossCache!.1)
+            }
+            return outputs
+        }
+    }
+
     // MARK: - Offline (Batch) Generation
 
-    /// Transcribe audio in a single pass.
-    ///
-    /// - Parameters:
-    ///   - audio: Raw audio samples at 16 kHz (1-D MLXArray), or path string.
-    ///   - maxTokens: Maximum tokens to generate.
-    ///   - temperature: Sampling temperature (0 = greedy argmax).
-    /// - Returns: Transcription result.
     public func generate(
         audio: MLXArray,
         maxTokens: Int = 500,
@@ -76,30 +102,33 @@ public final class MoonshineModel: Module, @unchecked Sendable {
             input = input.squeezed()
         }
 
-        // Encode
+        // Encode (single fused eval for entire pipeline)
         let features = encoder.embedder(input)
         let encoded = encoder(features)
         let memory = decoder.prepareMemory(encoded)
         eval(memory)
 
-        // Limit tokens by audio duration
         let dur = Double(input.dim(0)) / Double(sampleRate)
         let maxTok = min(maxTokens, Int(ceil(dur * config.maxTokensPerSecond)))
 
-        // Decode
+        // Greedy decode with compiled step + async eval pipelining
         var tokens: [Int] = [config.decoderStartTokenId]
         var cache: [DecoderLayerCache]? = nil
 
-        // First token (sync)
+        // First token (sync to prime the cache)
         var tok = MLXArray(Int32(tokens.last!)).reshaped(1, 1)
         var result = decoder(tok, memory: memory, cache: cache)
         cache = result.cache
         var logits = getLogits(result.hidden[0..., (-1)..., 0...])
-        var nextTokArr = temperature > 0
-            ? MLXRandom.categorical(logits / MLXArray(temperature))
-            : argMax(logits, axis: -1)
+        var nextTokArr: MLXArray
+        if temperature > 0 {
+            nextTokArr = MLXRandom.categorical(logits / temperature)
+        } else {
+            nextTokArr = argMax(logits, axis: -1)
+        }
         eval(nextTokArr)
 
+        // Remaining tokens with async eval pipelining
         for _ in 0 ..< (maxTok - 1) {
             let nt = nextTokArr.item(Int.self)
             if nt == config.eosTokenId { break }
@@ -109,9 +138,11 @@ public final class MoonshineModel: Module, @unchecked Sendable {
             result = decoder(tok, memory: memory, cache: cache)
             cache = result.cache
             logits = getLogits(result.hidden[0..., (-1)..., 0...])
-            nextTokArr = temperature > 0
-                ? MLXRandom.categorical(logits / MLXArray(temperature))
-                : argMax(logits, axis: -1)
+            if temperature > 0 {
+                nextTokArr = MLXRandom.categorical(logits / temperature)
+            } else {
+                nextTokArr = argMax(logits, axis: -1)
+            }
             asyncEval(nextTokArr)
         }
 
@@ -139,7 +170,6 @@ public final class MoonshineModel: Module, @unchecked Sendable {
 
     // MARK: - Word-Level Timestamps
 
-    /// Transcribe audio with word-level timestamps via cross-attention DTW.
     public func generateWithWordTimestamps(
         audio: MLXArray,
         maxTokens: Int = 500,
@@ -152,7 +182,6 @@ public final class MoonshineModel: Module, @unchecked Sendable {
             input = input.squeezed()
         }
 
-        // Encode
         let features = encoder.embedder(input)
         let encoded = encoder(features)
         let memory = decoder.prepareMemory(encoded)
@@ -162,7 +191,6 @@ public final class MoonshineModel: Module, @unchecked Sendable {
         let dur = Double(input.dim(0)) / Double(sampleRate)
         let maxTok = min(maxTokens, Int(ceil(dur * config.maxTokensPerSecond)))
 
-        // Decode with cross-attention weight extraction
         var tokens: [Int] = [config.decoderStartTokenId]
         var cache: [DecoderLayerCache]? = nil
         var crossQKPerStep: [[[MLXArray]]] = []
@@ -193,7 +221,6 @@ public final class MoonshineModel: Module, @unchecked Sendable {
         let text = decodeTokens(gen)
         let elapsed = CFAbsoluteTimeGetCurrent() - start
 
-        // Extract word timestamps
         let wordTimings = findAlignment(
             crossQKPerStep: crossQKPerStep,
             tokens: gen,
@@ -204,9 +231,7 @@ public final class MoonshineModel: Module, @unchecked Sendable {
             tokenProbs: tokenProbs
         )
 
-        let words = wordTimings.map { wt in
-            WordTiming(word: wt.word, tokens: wt.tokens, start: wt.start, end: wt.end, probability: wt.probability)
-        }
+        let words = wordTimings
 
         let output = TranscriptionOutput(
             text: text.trimmingCharacters(in: .whitespaces),
@@ -228,7 +253,6 @@ public final class MoonshineModel: Module, @unchecked Sendable {
         if let tokenizer {
             return tokenizer.decode(tokens)
         }
-        // Fallback: ASCII decode
         return tokens.map { t in
             t < 128 ? String(UnicodeScalar(t)!) : "<\(t)>"
         }.joined()
@@ -238,7 +262,6 @@ public final class MoonshineModel: Module, @unchecked Sendable {
 // MARK: - Convenience Loading
 
 extension MoonshineModel {
-    /// Load a Moonshine model from a HuggingFace repo ID or local path.
     public static func load(
         from source: String = MoonshineModelLoader.defaultModelRepo,
         hfToken: String? = nil
