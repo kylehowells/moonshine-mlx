@@ -56,6 +56,9 @@ public enum MoonshineModelLoader {
         try model.update(parameters: ModuleParameters.unflattened(sanitized))
         eval(model.parameters())
 
+        // Pre-compute offset weights for UnitOffsetLayerNorm layers
+        model.prepareForInference()
+
         // Load tokenizer
         let tokenizer = try runBlocking {
             try await MoonshineTokenizer.load(from: directory)

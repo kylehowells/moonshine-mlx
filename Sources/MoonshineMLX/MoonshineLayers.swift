@@ -179,9 +179,13 @@ final class DecoderMLP: Module, @unchecked Sendable {
 // MARK: - Layer Normalization
 
 /// LayerNorm with unit offset: gamma stored near 0, 1.0 added at runtime.
+/// Uses MLXFast.layerNorm fused kernel for speed.
 final class UnitOffsetLayerNorm: Module, @unchecked Sendable {
     var weight: MLXArray
     let dims: Int
+    /// Pre-computed (weight + 1) to avoid creating a temporary every call.
+    /// Updated when weights are loaded.
+    private var _offsetWeight: MLXArray?
 
     init(_ dims: Int) {
         self.dims = dims
@@ -189,10 +193,21 @@ final class UnitOffsetLayerNorm: Module, @unchecked Sendable {
     }
 
     func callAsFunction(_ x: MLXArray) -> MLXArray {
-        let mean = x.mean(axis: -1, keepDims: true)
-        let variance = x.variance(axis: -1, keepDims: true)
-        let normed = (x - mean) / MLX.sqrt(variance + 1e-5)
-        return normed * (weight + 1.0)
+        // Cache weight+1 to avoid repeated allocation
+        let w: MLXArray
+        if let cached = _offsetWeight, cached.shape == weight.shape {
+            w = cached
+        } else {
+            w = weight + 1.0
+            _offsetWeight = w
+        }
+        return MLXFast.layerNorm(x, weight: w, bias: nil, eps: 1e-5)
+    }
+
+    /// Call after weights are loaded to pre-compute offset weight.
+    func prepareForInference() {
+        _offsetWeight = weight + 1.0
+        eval(_offsetWeight!)
     }
 }
 

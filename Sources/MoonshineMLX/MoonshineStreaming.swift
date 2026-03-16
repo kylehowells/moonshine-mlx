@@ -158,7 +158,7 @@ extension MoonshineModel {
         var tok = MLXArray(Int32(tokens.last!)).reshaped(1, 1)
         var result = decoder(tok, memory: memory, cache: cache)
         cache = result.cache
-        var logits = getLogits(result.hidden[0..., (-1)..., 0...])
+        var logits = getLogits(result.hidden)
         var nextTokArr = temperature > 0
             ? MLXRandom.categorical(logits / MLXArray(temperature))
             : argMax(logits, axis: -1)
@@ -172,7 +172,7 @@ extension MoonshineModel {
             tok = MLXArray(Int32(nt)).reshaped(1, 1)
             result = decoder(tok, memory: memory, cache: cache)
             cache = result.cache
-            logits = getLogits(result.hidden[0..., (-1)..., 0...])
+            logits = getLogits(result.hidden)
             nextTokArr = temperature > 0
                 ? MLXRandom.categorical(logits / MLXArray(temperature))
                 : argMax(logits, axis: -1)

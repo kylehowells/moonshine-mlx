@@ -43,13 +43,26 @@ public final class MoonshineModel: Module, @unchecked Sendable {
 
     public var sampleRate: Int { config.encoder.sampleRate }
 
+    /// Pre-compute cached values after weights are loaded.
+    func prepareForInference() {
+        // Pre-compute UnitOffsetLayerNorm offset weights
+        for layer in encoder.layers {
+            layer.input_layernorm.prepareForInference()
+            layer.post_attention_layernorm.prepareForInference()
+        }
+        encoder.final_norm.prepareForInference()
+    }
+
     // MARK: - Logits
 
+    /// Project decoder hidden state to vocabulary logits.
+    /// Input: [B, T, D] or [B, D] — extracts last timestep if needed.
     func getLogits(_ hidden: MLXArray) -> MLXArray {
+        let h = hidden.ndim == 3 ? hidden[0..., (-1)..., 0...] : hidden
         if config.tieWordEmbeddings {
-            return hidden.matmul(decoder.embed_tokens.weight.transposed())
+            return h.matmul(decoder.embed_tokens.weight.transposed())
         }
-        return proj_out(hidden)
+        return proj_out(h)
     }
 
     // MARK: - Compiled Decode Step
@@ -73,7 +86,7 @@ public final class MoonshineModel: Module, @unchecked Sendable {
             }
 
             let result = self.decoder(token, memory: memory, cache: cache)
-            let logits = self.getLogits(result.hidden[0..., (-1)..., 0...])
+            let logits = self.getLogits(result.hidden)
             let nextTok = argMax(logits, axis: -1)
 
             // outputs: [nextTok, selfK_0, selfV_0, crossK_0, crossV_0, ..., selfK_N, selfV_N, crossK_N, crossV_N]
@@ -103,6 +116,7 @@ public final class MoonshineModel: Module, @unchecked Sendable {
             input = input.squeezed()
         }
 
+
         // Encode
         let features = encoder.embedder(input)
         let encoded = encoder(features)
@@ -121,7 +135,7 @@ public final class MoonshineModel: Module, @unchecked Sendable {
         var tok = MLXArray(Int32(tokens.last!)).reshaped(1, 1)
         var result = decoder(tok, memory: memory, cache: cache)
         cache = result.cache
-        var logits = getLogits(result.hidden[0..., (-1)..., 0...])
+        var logits = getLogits(result.hidden)
         var nextTokArr: MLXArray
         if temperature > 0 {
             nextTokArr = MLXRandom.categorical(logits / temperature)
@@ -141,7 +155,7 @@ public final class MoonshineModel: Module, @unchecked Sendable {
             tok = MLXArray(Int32(nt)).reshaped(1, 1)
             result = decoder(tok, memory: memory, cache: cache)
             cache = result.cache
-            logits = getLogits(result.hidden[0..., (-1)..., 0...])
+            logits = getLogits(result.hidden)
             if temperature > 0 {
                 nextTokArr = MLXRandom.categorical(logits / temperature)
             } else {
@@ -225,7 +239,7 @@ public final class MoonshineModel: Module, @unchecked Sendable {
                 crossQKPerStep.append(qks)
             }
 
-            let logits = getLogits(result.hidden[0..., (-1)..., 0...])
+            let logits = getLogits(result.hidden)
             let probs = softmax(logits, axis: -1)
             let nt = argMax(logits, axis: -1).item(Int.self)
             eval(probs)
