@@ -39,6 +39,8 @@ dependencies: [
 ]
 ```
 
+**Offline transcription:**
+
 ```swift
 import MoonshineMLX
 
@@ -46,6 +48,32 @@ let model = try MoonshineModel.load(from: "UsefulSensors/moonshine-streaming-tin
 let (_, audio) = try AudioIO.loadMono(url: audioURL, targetSampleRate: model.sampleRate)
 let result = model.generate(audio: audio)
 print(result.text)
+```
+
+**Live streaming (e.g. from microphone):**
+
+```swift
+let model = try MoonshineModel.load(from: "UsefulSensors/moonshine-streaming-tiny")
+let state = model.createStream()
+model.startStream(state)
+
+// Feed audio chunks as they arrive (e.g. from AVAudioEngine at 16 kHz)
+func onAudioBuffer(_ samples: MLXArray) {
+    model.addAudio(state, chunk: samples)
+
+    // Transcribe what we have so far
+    let text = model.transcribe(state, isFinal: false)
+    if !text.isEmpty {
+        print(text)  // partial result, updates as more audio arrives
+    }
+}
+
+// When speech segment ends:
+let finalText = model.transcribe(state, isFinal: true)
+print(finalText)
+
+// Reset for next utterance (reuses frontend buffers)
+model.startStream(state)
 ```
 
 ### CLI
