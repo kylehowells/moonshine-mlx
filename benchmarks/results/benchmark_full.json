@@ -1,0 +1,748 @@
+{
+  "benchmark": "moonshine-mlx-full",
+  "timestamp": "2026-03-16T15:28:08",
+  "num_warmup": 1,
+  "num_runs": 3,
+  "results": [
+    {
+      "impl": "python",
+      "model": "tiny",
+      "audio": "genesis_1_1 (6.6s)",
+      "dur_s": 6.6,
+      "model_mb": 176.2,
+      "load_s": 0.28,
+      "avg_time_s": 0.071,
+      "avg_tps": 256.0,
+      "avg_peak_mb": 264.7,
+      "runs": [
+        {
+          "time_s": 0.0665,
+          "tokens": 18,
+          "tps": 270.5,
+          "peak_mb": 264.7,
+          "wer": 0.0,
+          "text": "Genesis 1:1 In the beginning, God created the heaven and the earth."
+        },
+        {
+          "time_s": 0.065,
+          "tokens": 18,
+          "tps": 276.8,
+          "peak_mb": 264.7,
+          "wer": 0.0,
+          "text": "Genesis 1:1 In the beginning, God created the heaven and the earth."
+        },
+        {
+          "time_s": 0.0815,
+          "tokens": 18,
+          "tps": 220.8,
+          "peak_mb": 264.7,
+          "wer": 0.0,
+          "text": "Genesis 1:1 In the beginning, God created the heaven and the earth."
+        }
+      ]
+    },
+    {
+      "impl": "swift",
+      "model": "tiny",
+      "audio": "genesis_1_1 (6.6s)",
+      "avg_time_s": 0.0552,
+      "avg_tps": 326.2,
+      "avg_peak_mb": 265.4,
+      "runs": [
+        {
+          "time_s": 0.0548,
+          "tokens": 18,
+          "tps": 328.5,
+          "peak_mb": 265.4,
+          "wer": 0.0,
+          "wall_s": 1.82,
+          "text": "Genesis 1:1 In the beginning, God created the heaven and the earth."
+        },
+        {
+          "time_s": 0.0541,
+          "tokens": 18,
+          "tps": 333.0,
+          "peak_mb": 265.4,
+          "wer": 0.0,
+          "wall_s": 1.77,
+          "text": "Genesis 1:1 In the beginning, God created the heaven and the earth."
+        },
+        {
+          "time_s": 0.0568,
+          "tokens": 18,
+          "tps": 317.1,
+          "peak_mb": 265.4,
+          "wer": 0.0,
+          "wall_s": 1.74,
+          "text": "Genesis 1:1 In the beginning, God created the heaven and the earth."
+        }
+      ]
+    },
+    {
+      "impl": "python",
+      "model": "tiny",
+      "audio": "genesis_1_2 (13.2s)",
+      "dur_s": 13.2,
+      "model_mb": 176.2,
+      "load_s": 0.2,
+      "avg_time_s": 0.1304,
+      "avg_tps": 291.4,
+      "avg_peak_mb": 584.3,
+      "runs": [
+        {
+          "time_s": 0.1322,
+          "tokens": 38,
+          "tps": 287.5,
+          "peak_mb": 584.3,
+          "wer": 0.0,
+          "text": "Genesis 1:2 And the earth was without form and void, and darkness was on the face of the deep, and the spirit of God moved on the face of the waters."
+        },
+        {
+          "time_s": 0.1276,
+          "tokens": 38,
+          "tps": 297.8,
+          "peak_mb": 584.3,
+          "wer": 0.0,
+          "text": "Genesis 1:2 And the earth was without form and void, and darkness was on the face of the deep, and the spirit of God moved on the face of the waters."
+        },
+        {
+          "time_s": 0.1315,
+          "tokens": 38,
+          "tps": 288.9,
+          "peak_mb": 584.3,
+          "wer": 0.0,
+          "text": "Genesis 1:2 And the earth was without form and void, and darkness was on the face of the deep, and the spirit of God moved on the face of the waters."
+        }
+      ]
+    },
+    {
+      "impl": "swift",
+      "model": "tiny",
+      "audio": "genesis_1_2 (13.2s)",
+      "avg_time_s": 0.1082,
+      "avg_tps": 351.3,
+      "avg_peak_mb": 404.5,
+      "runs": [
+        {
+          "time_s": 0.1108,
+          "tokens": 38,
+          "tps": 342.9,
+          "peak_mb": 404.5,
+          "wer": 0.0,
+          "wall_s": 1.89,
+          "text": "Genesis 1:2 And the earth was without form and void, and darkness was on the face of the deep, and the spirit of God moved on the face of the waters."
+        },
+        {
+          "time_s": 0.1068,
+          "tokens": 38,
+          "tps": 355.8,
+          "peak_mb": 404.5,
+          "wer": 0.0,
+          "wall_s": 1.81,
+          "text": "Genesis 1:2 And the earth was without form and void, and darkness was on the face of the deep, and the spirit of God moved on the face of the waters."
+        },
+        {
+          "time_s": 0.107,
+          "tokens": 38,
+          "tps": 355.2,
+          "peak_mb": 404.5,
+          "wer": 0.0,
+          "wall_s": 1.82,
+          "text": "Genesis 1:2 And the earth was without form and void, and darkness was on the face of the deep, and the spirit of God moved on the face of the waters."
+        }
+      ]
+    },
+    {
+      "impl": "python",
+      "model": "tiny",
+      "audio": "datacenter_30s",
+      "dur_s": 30.0,
+      "model_mb": 176.2,
+      "load_s": 0.2,
+      "avg_time_s": 0.355,
+      "avg_tps": 314.4,
+      "avg_peak_mb": 1231.3,
+      "runs": [
+        {
+          "time_s": 0.3481,
+          "tokens": 111,
+          "tps": 318.8,
+          "peak_mb": 1231.3,
+          "wer": null,
+          "text": "There's a seismic shift happening in the data center industry. A shift that's so fast enough such proportion, it's not only changing data centers, but entire industries. And you don't have to take my "
+        },
+        {
+          "time_s": 0.3258,
+          "tokens": 111,
+          "tps": 340.7,
+          "peak_mb": 1231.3,
+          "wer": null,
+          "text": "There's a seismic shift happening in the data center industry. A shift that's so fast enough such proportion, it's not only changing data centers, but entire industries. And you don't have to take my "
+        },
+        {
+          "time_s": 0.3911,
+          "tokens": 111,
+          "tps": 283.8,
+          "peak_mb": 1231.3,
+          "wer": null,
+          "text": "There's a seismic shift happening in the data center industry. A shift that's so fast enough such proportion, it's not only changing data centers, but entire industries. And you don't have to take my "
+        }
+      ]
+    },
+    {
+      "impl": "swift",
+      "model": "tiny",
+      "audio": "datacenter_30s",
+      "avg_time_s": 0.2789,
+      "avg_tps": 398.0,
+      "avg_peak_mb": 1026.0,
+      "runs": [
+        {
+          "time_s": 0.2794,
+          "tokens": 111,
+          "tps": 397.3,
+          "peak_mb": 1026,
+          "wer": null,
+          "wall_s": 1.96,
+          "text": "There's a seismic shift happening in the data center industry. A shift that's so fast enough such proportion, it's not only changing data centers, but entire industries. And you don't have to take my "
+        },
+        {
+          "time_s": 0.2773,
+          "tokens": 111,
+          "tps": 400.2,
+          "peak_mb": 1026,
+          "wer": null,
+          "wall_s": 1.98,
+          "text": "There's a seismic shift happening in the data center industry. A shift that's so fast enough such proportion, it's not only changing data centers, but entire industries. And you don't have to take my "
+        },
+        {
+          "time_s": 0.2799,
+          "tokens": 111,
+          "tps": 396.6,
+          "peak_mb": 1026,
+          "wer": null,
+          "wall_s": 1.98,
+          "text": "There's a seismic shift happening in the data center industry. A shift that's so fast enough such proportion, it's not only changing data centers, but entire industries. And you don't have to take my "
+        }
+      ]
+    },
+    {
+      "impl": "python",
+      "model": "tiny",
+      "audio": "datacenter_60s",
+      "dur_s": 60.0,
+      "model_mb": 176.2,
+      "load_s": 0.2,
+      "avg_time_s": 0.4973,
+      "avg_tps": 295.6,
+      "avg_peak_mb": 1637.3,
+      "runs": [
+        {
+          "time_s": 0.4942,
+          "tokens": 147,
+          "tps": 297.4,
+          "peak_mb": 1637.3,
+          "wer": null,
+          "text": "There's a seismic shift happening in the data center industry. A shift that's so fast enough such proportion, it's not only changing data centers, but entire industries. And you don't have to take my "
+        },
+        {
+          "time_s": 0.5025,
+          "tokens": 147,
+          "tps": 292.5,
+          "peak_mb": 1637.3,
+          "wer": null,
+          "text": "There's a seismic shift happening in the data center industry. A shift that's so fast enough such proportion, it's not only changing data centers, but entire industries. And you don't have to take my "
+        },
+        {
+          "time_s": 0.4953,
+          "tokens": 147,
+          "tps": 296.8,
+          "peak_mb": 1637.3,
+          "wer": null,
+          "text": "There's a seismic shift happening in the data center industry. A shift that's so fast enough such proportion, it's not only changing data centers, but entire industries. And you don't have to take my "
+        }
+      ]
+    },
+    {
+      "impl": "swift",
+      "model": "tiny",
+      "audio": "datacenter_60s",
+      "avg_time_s": 0.4491,
+      "avg_tps": 327.3,
+      "avg_peak_mb": 1588.0,
+      "runs": [
+        {
+          "time_s": 0.4527,
+          "tokens": 147,
+          "tps": 324.8,
+          "peak_mb": 1588,
+          "wer": null,
+          "wall_s": 2.27,
+          "text": "There's a seismic shift happening in the data center industry. A shift that's so fast enough such proportion, it's not only changing data centers, but entire industries. And you don't have to take my "
+        },
+        {
+          "time_s": 0.4485,
+          "tokens": 147,
+          "tps": 327.7,
+          "peak_mb": 1588,
+          "wer": null,
+          "wall_s": 2.12,
+          "text": "There's a seismic shift happening in the data center industry. A shift that's so fast enough such proportion, it's not only changing data centers, but entire industries. And you don't have to take my "
+        },
+        {
+          "time_s": 0.4462,
+          "tokens": 147,
+          "tps": 329.5,
+          "peak_mb": 1588,
+          "wer": null,
+          "wall_s": 2.13,
+          "text": "There's a seismic shift happening in the data center industry. A shift that's so fast enough such proportion, it's not only changing data centers, but entire industries. And you don't have to take my "
+        }
+      ]
+    },
+    {
+      "impl": "python",
+      "model": "tiny",
+      "audio": "datacenter_120s",
+      "dur_s": 120.0,
+      "model_mb": 176.2,
+      "load_s": 0.19,
+      "avg_time_s": 2.4225,
+      "avg_tps": 206.4,
+      "avg_peak_mb": 2380.1,
+      "runs": [
+        {
+          "time_s": 2.456,
+          "tokens": 500,
+          "tps": 203.6,
+          "peak_mb": 2380.1,
+          "wer": null,
+          "text": "There's a seismic shift happening in the data center industry. A shift that's so fast enough such proportion, it's not only changing data centers, but entire industries. And you don't have to take my "
+        },
+        {
+          "time_s": 2.4331,
+          "tokens": 500,
+          "tps": 205.5,
+          "peak_mb": 2380.1,
+          "wer": null,
+          "text": "There's a seismic shift happening in the data center industry. A shift that's so fast enough such proportion, it's not only changing data centers, but entire industries. And you don't have to take my "
+        },
+        {
+          "time_s": 2.3784,
+          "tokens": 500,
+          "tps": 210.2,
+          "peak_mb": 2380.1,
+          "wer": null,
+          "text": "There's a seismic shift happening in the data center industry. A shift that's so fast enough such proportion, it's not only changing data centers, but entire industries. And you don't have to take my "
+        }
+      ]
+    },
+    {
+      "impl": "swift",
+      "model": "tiny",
+      "audio": "datacenter_120s",
+      "avg_time_s": 1.9245,
+      "avg_tps": 260.1,
+      "avg_peak_mb": 2755.1,
+      "runs": [
+        {
+          "time_s": 1.9712,
+          "tokens": 500,
+          "tps": 253.7,
+          "peak_mb": 2755.1,
+          "wer": null,
+          "wall_s": 3.79,
+          "text": "There's a seismic shift happening in the data center industry. A shift that's so fast enough such proportion, it's not only changing data centers, but entire industries. And you don't have to take my "
+        },
+        {
+          "time_s": 1.8384,
+          "tokens": 500,
+          "tps": 272.0,
+          "peak_mb": 2755.1,
+          "wer": null,
+          "wall_s": 3.6,
+          "text": "There's a seismic shift happening in the data center industry. A shift that's so fast enough such proportion, it's not only changing data centers, but entire industries. And you don't have to take my "
+        },
+        {
+          "time_s": 1.9639,
+          "tokens": 500,
+          "tps": 254.6,
+          "peak_mb": 2755.1,
+          "wer": null,
+          "wall_s": 3.73,
+          "text": "There's a seismic shift happening in the data center industry. A shift that's so fast enough such proportion, it's not only changing data centers, but entire industries. And you don't have to take my "
+        }
+      ]
+    },
+    {
+      "impl": "python",
+      "model": "small",
+      "audio": "genesis_1_1 (6.6s)",
+      "dur_s": 6.6,
+      "model_mb": 560.5,
+      "load_s": 0.28,
+      "avg_time_s": 0.0845,
+      "avg_tps": 213.3,
+      "avg_peak_mb": 932.9,
+      "runs": [
+        {
+          "time_s": 0.0878,
+          "tokens": 18,
+          "tps": 205.1,
+          "peak_mb": 932.9,
+          "wer": 0.0,
+          "text": "Genesis 1:1 In the beginning, God created the heaven and the earth."
+        },
+        {
+          "time_s": 0.0814,
+          "tokens": 18,
+          "tps": 221.2,
+          "peak_mb": 932.9,
+          "wer": 0.0,
+          "text": "Genesis 1:1 In the beginning, God created the heaven and the earth."
+        },
+        {
+          "time_s": 0.0843,
+          "tokens": 18,
+          "tps": 213.6,
+          "peak_mb": 932.9,
+          "wer": 0.0,
+          "text": "Genesis 1:1 In the beginning, God created the heaven and the earth."
+        }
+      ]
+    },
+    {
+      "impl": "swift",
+      "model": "small",
+      "audio": "genesis_1_1 (6.6s)",
+      "avg_time_s": 0.074,
+      "avg_tps": 243.3,
+      "avg_peak_mb": 796.6,
+      "runs": [
+        {
+          "time_s": 0.0738,
+          "tokens": 18,
+          "tps": 243.8,
+          "peak_mb": 796.6,
+          "wer": 0.0,
+          "wall_s": 1.79,
+          "text": "Genesis 1:1 In the beginning, God created the heaven and the earth."
+        },
+        {
+          "time_s": 0.0716,
+          "tokens": 18,
+          "tps": 251.3,
+          "peak_mb": 796.6,
+          "wer": 0.0,
+          "wall_s": 1.84,
+          "text": "Genesis 1:1 In the beginning, God created the heaven and the earth."
+        },
+        {
+          "time_s": 0.0767,
+          "tokens": 18,
+          "tps": 234.8,
+          "peak_mb": 796.6,
+          "wer": 0.0,
+          "wall_s": 1.88,
+          "text": "Genesis 1:1 In the beginning, God created the heaven and the earth."
+        }
+      ]
+    },
+    {
+      "impl": "python",
+      "model": "small",
+      "audio": "genesis_1_2 (13.2s)",
+      "dur_s": 13.2,
+      "model_mb": 560.5,
+      "load_s": 0.22,
+      "avg_time_s": 0.1775,
+      "avg_tps": 215.6,
+      "avg_peak_mb": 1131.7,
+      "runs": [
+        {
+          "time_s": 0.1694,
+          "tokens": 38,
+          "tps": 224.4,
+          "peak_mb": 1131.7,
+          "wer": 0.0,
+          "text": "Genesis 1:2 And the earth was without form and void, and darkness was on the face of the deep, and the Spirit of God moved on the face of the waters."
+        },
+        {
+          "time_s": 0.1648,
+          "tokens": 38,
+          "tps": 230.6,
+          "peak_mb": 1131.7,
+          "wer": 0.0,
+          "text": "Genesis 1:2 And the earth was without form and void, and darkness was on the face of the deep, and the Spirit of God moved on the face of the waters."
+        },
+        {
+          "time_s": 0.1983,
+          "tokens": 38,
+          "tps": 191.7,
+          "peak_mb": 1131.7,
+          "wer": 0.0,
+          "text": "Genesis 1:2 And the earth was without form and void, and darkness was on the face of the deep, and the Spirit of God moved on the face of the waters."
+        }
+      ]
+    },
+    {
+      "impl": "swift",
+      "model": "small",
+      "audio": "genesis_1_2 (13.2s)",
+      "avg_time_s": 0.1326,
+      "avg_tps": 286.6,
+      "avg_peak_mb": 950.0,
+      "runs": [
+        {
+          "time_s": 0.1316,
+          "tokens": 38,
+          "tps": 288.8,
+          "peak_mb": 950,
+          "wer": 0.10344827586206896,
+          "wall_s": 1.86,
+          "text": "Genesis one, two, and the earth was without form and void, and darkness was on the face of the deep, and the spirit of God moved on the face of the waters."
+        },
+        {
+          "time_s": 0.132,
+          "tokens": 38,
+          "tps": 288.0,
+          "peak_mb": 950,
+          "wer": 0.10344827586206896,
+          "wall_s": 1.9,
+          "text": "Genesis one, two, and the earth was without form and void, and darkness was on the face of the deep, and the spirit of God moved on the face of the waters."
+        },
+        {
+          "time_s": 0.1342,
+          "tokens": 38,
+          "tps": 283.1,
+          "peak_mb": 950,
+          "wer": 0.10344827586206896,
+          "wall_s": 1.92,
+          "text": "Genesis one, two, and the earth was without form and void, and darkness was on the face of the deep, and the spirit of God moved on the face of the waters."
+        }
+      ]
+    },
+    {
+      "impl": "python",
+      "model": "small",
+      "audio": "datacenter_30s",
+      "dur_s": 30.0,
+      "model_mb": 560.5,
+      "load_s": 0.21,
+      "avg_time_s": 0.4717,
+      "avg_tps": 233.4,
+      "avg_peak_mb": 1786.1,
+      "runs": [
+        {
+          "time_s": 0.4577,
+          "tokens": 110,
+          "tps": 240.3,
+          "peak_mb": 1786.1,
+          "wer": null,
+          "text": "There's a seismic shift happening in the data center industry. A shift that's so fast and of such proportion, it's not only changing data centers, but entire industries. And you don't have to take my "
+        },
+        {
+          "time_s": 0.4699,
+          "tokens": 110,
+          "tps": 234.1,
+          "peak_mb": 1786.1,
+          "wer": null,
+          "text": "There's a seismic shift happening in the data center industry. A shift that's so fast and of such proportion, it's not only changing data centers, but entire industries. And you don't have to take my "
+        },
+        {
+          "time_s": 0.4874,
+          "tokens": 110,
+          "tps": 225.7,
+          "peak_mb": 1786.1,
+          "wer": null,
+          "text": "There's a seismic shift happening in the data center industry. A shift that's so fast and of such proportion, it's not only changing data centers, but entire industries. And you don't have to take my "
+        }
+      ]
+    },
+    {
+      "impl": "swift",
+      "model": "small",
+      "audio": "datacenter_30s",
+      "avg_time_s": 0.5605,
+      "avg_tps": 348.0,
+      "avg_peak_mb": 1526.7,
+      "runs": [
+        {
+          "time_s": 0.5602,
+          "tokens": 195,
+          "tps": 348.1,
+          "peak_mb": 1526.7,
+          "wer": null,
+          "wall_s": 2.31,
+          "text": "<unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk>"
+        },
+        {
+          "time_s": 0.5459,
+          "tokens": 195,
+          "tps": 357.2,
+          "peak_mb": 1526.7,
+          "wer": null,
+          "wall_s": 2.3,
+          "text": "<unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk>"
+        },
+        {
+          "time_s": 0.5755,
+          "tokens": 195,
+          "tps": 338.8,
+          "peak_mb": 1526.7,
+          "wer": null,
+          "wall_s": 2.35,
+          "text": "<unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk>"
+        }
+      ]
+    },
+    {
+      "impl": "python",
+      "model": "small",
+      "audio": "datacenter_60s",
+      "dur_s": 60.0,
+      "model_mb": 560.5,
+      "load_s": 0.21,
+      "avg_time_s": 0.8033,
+      "avg_tps": 183.0,
+      "avg_peak_mb": 1966.7,
+      "runs": [
+        {
+          "time_s": 0.8051,
+          "tokens": 147,
+          "tps": 182.6,
+          "peak_mb": 1966.7,
+          "wer": null,
+          "text": "There's a seismic shift happening in the data center industry. A shift that's so fast and of such proportion, it's not only changing data centers, but entire industries. And you don't have to take my "
+        },
+        {
+          "time_s": 0.8163,
+          "tokens": 147,
+          "tps": 180.1,
+          "peak_mb": 1966.7,
+          "wer": null,
+          "text": "There's a seismic shift happening in the data center industry. A shift that's so fast and of such proportion, it's not only changing data centers, but entire industries. And you don't have to take my "
+        },
+        {
+          "time_s": 0.7885,
+          "tokens": 147,
+          "tps": 186.4,
+          "peak_mb": 1966.7,
+          "wer": null,
+          "text": "There's a seismic shift happening in the data center industry. A shift that's so fast and of such proportion, it's not only changing data centers, but entire industries. And you don't have to take my "
+        }
+      ]
+    },
+    {
+      "impl": "swift",
+      "model": "small",
+      "audio": "datacenter_60s",
+      "avg_time_s": 1.3858,
+      "avg_tps": 282.1,
+      "avg_peak_mb": 2030.5,
+      "runs": [
+        {
+          "time_s": 1.2912,
+          "tokens": 390,
+          "tps": 302.0,
+          "peak_mb": 2030.5,
+          "wer": null,
+          "wall_s": 3.12,
+          "text": "In<unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><un"
+        },
+        {
+          "time_s": 1.4384,
+          "tokens": 390,
+          "tps": 271.1,
+          "peak_mb": 2030.5,
+          "wer": null,
+          "wall_s": 3.25,
+          "text": "It<unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><un"
+        },
+        {
+          "time_s": 1.4278,
+          "tokens": 390,
+          "tps": 273.1,
+          "peak_mb": 2030.5,
+          "wer": null,
+          "wall_s": 3.27,
+          "text": "<unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk>"
+        }
+      ]
+    },
+    {
+      "impl": "python",
+      "model": "small",
+      "audio": "datacenter_120s",
+      "dur_s": 120.0,
+      "model_mb": 560.5,
+      "load_s": 0.21,
+      "avg_time_s": 1.1387,
+      "avg_tps": 129.3,
+      "avg_peak_mb": 1993.0,
+      "runs": [
+        {
+          "time_s": 1.2059,
+          "tokens": 147,
+          "tps": 121.9,
+          "peak_mb": 1993.0,
+          "wer": null,
+          "text": "There's a seismic shift happening in the data center industry. A shift that's so fast and of such proportion, it's not only changing data centers, but entire industries. And you don't have to take my "
+        },
+        {
+          "time_s": 1.1083,
+          "tokens": 147,
+          "tps": 132.6,
+          "peak_mb": 1993.0,
+          "wer": null,
+          "text": "There's a seismic shift happening in the data center industry. A shift that's so fast and of such proportion, it's not only changing data centers, but entire industries. And you don't have to take my "
+        },
+        {
+          "time_s": 1.1019,
+          "tokens": 147,
+          "tps": 133.4,
+          "peak_mb": 1993.0,
+          "wer": null,
+          "text": "There's a seismic shift happening in the data center industry. A shift that's so fast and of such proportion, it's not only changing data centers, but entire industries. And you don't have to take my "
+        }
+      ]
+    },
+    {
+      "impl": "swift",
+      "model": "small",
+      "audio": "datacenter_120s",
+      "avg_time_s": 1.5541,
+      "avg_tps": 155.0,
+      "avg_peak_mb": 2783.2,
+      "runs": [
+        {
+          "time_s": 2.1354,
+          "tokens": 500,
+          "tps": 234.2,
+          "peak_mb": 2783.2,
+          "wer": null,
+          "wall_s": 3.91,
+          "text": "<unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk>"
+        },
+        {
+          "time_s": 0.3609,
+          "tokens": 0,
+          "tps": 0,
+          "peak_mb": 2783.2,
+          "wer": null,
+          "wall_s": 2.18,
+          "text": ""
+        },
+        {
+          "time_s": 2.1659,
+          "tokens": 500,
+          "tps": 230.8,
+          "peak_mb": 2783.2,
+          "wer": null,
+          "wall_s": 3.94,
+          "text": "The<unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><unk><u"
+        }
+      ]
+    }
+  ]
+}
