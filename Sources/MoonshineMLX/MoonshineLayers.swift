@@ -134,17 +134,19 @@ final class MoonshineAttention: Module, @unchecked Sendable {
             let w = softmax(qk, axis: -1)
             o = w.matmul(vExpanded)
             crossQK = qk
-        } else if attnMask != nil {
-            o = MLXFast.scaledDotProductAttention(
-                queries: q, keys: kExpanded, values: vExpanded,
-                scale: scale, mask: attnMask
-            )
         } else {
-            // Manual attention for cross-attention (no mask needed)
-            // Avoids potential MLXFast kernel issues with certain sizes
-            let qk = q.matmul(kExpanded.transposed(0, 1, 3, 2)) * scale
-            let w = softmax(qk, axis: -1)
-            o = w.matmul(vExpanded)
+            if let attnMask {
+                o = MLXFast.scaledDotProductAttention(
+                    queries: q, keys: kExpanded, values: vExpanded,
+                    scale: scale, mask: attnMask
+                )
+            } else {
+                // Manual attention for maskless paths (cross-attention).
+                // MLXFast.scaledDotProductAttention without a mask has a kernel bug
+                // producing NaN for sequences > ~1024.
+                let qk = q.matmul(kExpanded.transposed(0, 1, 3, 2)) * scale
+                o = softmax(qk, axis: -1).matmul(vExpanded)
+            }
         }
 
         let out = o.transposed(0, 2, 1, 3).reshaped(B, T, -1)
