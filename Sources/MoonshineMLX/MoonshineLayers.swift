@@ -75,30 +75,33 @@ final class MoonshineAttention: Module, @unchecked Sendable {
         let T = x.dim(1)
         let isCross = encoderHiddenStates != nil
 
-        var q = q_proj(x)
-        let kvInput = encoderHiddenStates ?? x
-        var k = k_proj(kvInput)
-        var v = v_proj(kvInput)
+        // Q projection always needed
+        var q = q_proj(x).reshaped(B, T, num_heads, head_dim).transposed(0, 2, 1, 3)
 
-        q = q.reshaped(B, T, num_heads, head_dim).transposed(0, 2, 1, 3)
-        let S = k.dim(1)
-        k = k.reshaped(B, S, num_kv_heads, head_dim).transposed(0, 2, 1, 3)
-        v = v.reshaped(B, S, num_kv_heads, head_dim).transposed(0, 2, 1, 3)
+        var k: MLXArray
+        var v: MLXArray
 
-        // Fused RoPE via MLXFast - traditional=true matches this model's convention
-        if use_rope && !isCross {
-            let offset = cache?.0.dim(2) ?? 0
-            q = MLXFast.RoPE(q, dimensions: rotary_ndims, traditional: true,
-                             base: ropeBase, scale: 1.0, offset: offset)
-            k = MLXFast.RoPE(k, dimensions: rotary_ndims, traditional: true,
-                             base: ropeBase, scale: 1.0, offset: offset)
-        }
+        if isCross, let cache {
+            // Cross-attention with cached KV: skip K/V projection entirely
+            k = cache.0
+            v = cache.1
+        } else {
+            // Compute K/V from input (self-attention or first cross-attention call)
+            let kvInput = encoderHiddenStates ?? x
+            let S = kvInput.dim(1)
+            k = k_proj(kvInput).reshaped(B, S, num_kv_heads, head_dim).transposed(0, 2, 1, 3)
+            v = v_proj(kvInput).reshaped(B, S, num_kv_heads, head_dim).transposed(0, 2, 1, 3)
 
-        if let cache {
-            if isCross {
-                k = cache.0
-                v = cache.1
-            } else {
+            if use_rope && !isCross {
+                let offset = cache?.0.dim(2) ?? 0
+                q = MLXFast.RoPE(q, dimensions: rotary_ndims, traditional: true,
+                                 base: ropeBase, scale: 1.0, offset: offset)
+                k = MLXFast.RoPE(k, dimensions: rotary_ndims, traditional: true,
+                                 base: ropeBase, scale: 1.0, offset: offset)
+            }
+
+            if let cache {
+                // Self-attention: append to cache
                 k = concatenated([cache.0, k], axis: 2)
                 v = concatenated([cache.1, v], axis: 2)
             }
