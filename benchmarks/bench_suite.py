@@ -42,6 +42,9 @@ SHORT_AUDIO = os.path.join(AUDIO_DIR, "00000001-Genesis-1:1.wav")  # ~6.6s
 LONG_AUDIO_SOURCE = "/Users/kylehowells/Movies/YouTube/How AI Datacenters Eat the World [dhqoTku-HAA].mp3"
 AUDIO_LENGTHS = [6, 30, 60, 600]  # seconds
 
+# Synthetic TTS audio with known transcripts for WER measurement
+SYNTH_DIR = os.path.join(MLX_AUDIO_DIR, "benchmark_synthetic")
+
 # ── Model Registry ───────────────────────────────────────────────────
 
 MODELS = {
@@ -105,6 +108,56 @@ def model_size_on_disk(model_path):
     return round(total / 1e6, 1)
 
 
+def compute_wer(reference, hypothesis):
+    """Word Error Rate via dynamic programming. Returns (wer, errors, ref_words)."""
+    import re
+    def normalize(t):
+        t = t.lower()
+        t = re.sub(r'[^\w\s]', '', t)  # strip punctuation
+        return t.split()
+
+    ref = normalize(reference)
+    hyp = normalize(hypothesis)
+    r, h = len(ref), len(hyp)
+    d = [[0] * (h + 1) for _ in range(r + 1)]
+    for i in range(r + 1): d[i][0] = i
+    for j in range(h + 1): d[0][j] = j
+    for i in range(1, r + 1):
+        for j in range(1, h + 1):
+            if ref[i - 1] == hyp[j - 1]:
+                d[i][j] = d[i - 1][j - 1]
+            else:
+                d[i][j] = 1 + min(d[i - 1][j], d[i][j - 1], d[i - 1][j - 1])
+    errors = d[r][h]
+    wer = errors / max(r, 1)
+    return wer, errors, r
+
+
+def get_synthetic_files():
+    """Find synthetic TTS audio files with matching transcripts."""
+    pairs = []
+    if not os.path.isdir(SYNTH_DIR):
+        return pairs
+    for f in sorted(os.listdir(SYNTH_DIR)):
+        if f.endswith(".wav"):
+            base = f.replace(".wav", "")
+            txt_file = os.path.join(SYNTH_DIR, base + "_excerpt.txt")
+            if os.path.exists(txt_file):
+                with open(txt_file, "r") as fh:
+                    ref_text = fh.read().strip()
+                # Use a short name for display
+                short = base.split("[")[0].strip()
+                if len(short) > 40:
+                    short = short[:37] + "..."
+                pairs.append({
+                    "name": short,
+                    "audio": os.path.join(SYNTH_DIR, f),
+                    "reference": ref_text,
+                    "ref_words": len(ref_text.split()),
+                })
+    return pairs
+
+
 # ── Benchmark Functions ──────────────────────────────────────────────
 
 def bench_cold_start(model_name, model_path, audio_path):
@@ -152,6 +205,40 @@ def bench_steady_state(model_name, model_path, audio_path):
     for key in results[0]:
         avg[key] = round(sum(r[key] for r in results) / len(results), 2)
     return avg
+
+
+def bench_wer(model_name, model_path, synth_files):
+    """Measure WER on synthetic TTS audio with known transcripts."""
+    if not synth_files:
+        return None
+    results = []
+    total_errors = 0
+    total_ref_words = 0
+    for sf in synth_files:
+        d = run_swift(model_path, sf["audio"])
+        if not d:
+            results.append({"name": sf["name"], "error": "transcription failed"})
+            continue
+        hyp = d.get("text", "")
+        wer, errors, ref_words = compute_wer(sf["reference"], hyp)
+        total_errors += errors
+        total_ref_words += ref_words
+        results.append({
+            "name": sf["name"],
+            "ref_words": ref_words,
+            "hyp_words": len(hyp.split()),
+            "errors": errors,
+            "wer": round(wer, 4),
+            "wer_pct": f"{wer*100:.1f}%",
+        })
+    overall_wer = total_errors / max(total_ref_words, 1)
+    return {
+        "files": results,
+        "total_ref_words": total_ref_words,
+        "total_errors": total_errors,
+        "overall_wer": round(overall_wer, 4),
+        "overall_wer_pct": f"{overall_wer*100:.1f}%",
+    }
 
 
 def bench_audio_lengths(model_name, model_path, audio_files):
@@ -210,7 +297,9 @@ def main():
     if args.quick:
         audio_files = {k: v for k, v in audio_files.items() if k <= 30}
 
-    print(f"Benchmarking {len(model_names)} models on {len(audio_files)} audio lengths\n")
+    synth_files = get_synthetic_files()
+    print(f"Benchmarking {len(model_names)} models on {len(audio_files)} audio lengths"
+          f" + {len(synth_files)} WER files\n")
 
     all_results = []
 
@@ -255,6 +344,19 @@ def main():
             print(f"\n    {dur:>4d}s: {r['transcription_time_s']:.3f}s, {r['tokens']:3d} tok, {r['tokens_per_second']:.0f} tok/s, RTF {r['real_time_factor']:.4f}x", end="")
         print()
 
+        # 4. WER on synthetic audio
+        wer_result = None
+        if synth_files and not args.quick:
+            print(f"  WER (synthetic)...", end="", flush=True)
+            wer_result = bench_wer(model_name, model_path, synth_files)
+            if wer_result:
+                print(f" {wer_result['overall_wer_pct']} ({wer_result['total_errors']}/{wer_result['total_ref_words']} words)")
+                for fr in wer_result["files"]:
+                    if "error" not in fr:
+                        print(f"    {fr['name']:<42s} WER {fr['wer_pct']:>6s} ({fr['errors']:>4d}/{fr['ref_words']} words)")
+            else:
+                print(" FAILED")
+
         result = {
             "model": model_name,
             "description": description,
@@ -263,6 +365,7 @@ def main():
             "cold_start": cold,
             "steady_state_6s": steady,
             "audio_lengths": lengths,
+            "wer": wer_result,
         }
         all_results.append(result)
         print()
@@ -287,12 +390,12 @@ def main():
         json.dump(out, f, indent=2)
 
     # Summary table
-    print(f"\n{'='*100}")
-    print(f"{'SUMMARY':^100}")
-    print(f"{'='*100}")
+    print(f"\n{'='*110}")
+    print(f"{'SUMMARY':^110}")
+    print(f"{'='*110}")
     print(f"{'Model':<14} {'Params':>6} {'Disk':>6} {'Cold':>7} {'Warm 6s':>8} {'Tok/s':>6} {'Mem':>7}"
-          f" {'30s':>7} {'60s':>7} {'10m':>7}")
-    print("-" * 100)
+          f" {'30s':>7} {'60s':>7} {'10m':>7} {'WER':>8}")
+    print("-" * 110)
 
     for r in all_results:
         cold_s = f"{r['cold_start']['wall_time_s']:.2f}s" if r.get("cold_start") else "—"
@@ -306,9 +409,11 @@ def main():
         if 60 in al: t60 = f"{al[60]['transcription_time_s']:.2f}s"
         if 600 in al: t600 = f"{al[600]['transcription_time_s']:.2f}s"
 
+        wer_str = r["wer"]["overall_wer_pct"] if r.get("wer") else "—"
+
         print(f"{r['model']:<14} {r['parameters_millions']:>4}M {r.get('model_size_mb',0):>5.0f}M"
               f" {cold_s:>7} {warm_ms:>8} {tps:>6} {mem:>7}"
-              f" {t30:>7} {t60:>7} {t600:>7}")
+              f" {t30:>7} {t60:>7} {t600:>7} {wer_str:>8}")
 
     print(f"\nResults saved to: {out_path}")
     print(f"Latest link: {latest_path}")
