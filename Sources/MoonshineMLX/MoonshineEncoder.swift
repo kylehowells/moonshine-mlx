@@ -47,7 +47,7 @@ final class AsinhCompression: Module, @unchecked Sendable {
 ///   6. conv2(x): Conv1d(2*enc_dim, enc_dim, k=5, s=2)
 ///
 /// Output rate: 50 Hz (one feature every 20 ms).
-final class Embedder: Module, @unchecked Sendable {
+public final class Embedder: Module, @unchecked Sendable {
     let cmvn: FrameCMVN
     let comp: AsinhCompression
     let linear: Linear
@@ -153,8 +153,8 @@ final class Embedder: Module, @unchecked Sendable {
 
 // MARK: - Encoder
 
-final class MoonshineEncoder: Module, @unchecked Sendable {
-    let embedder: Embedder
+public final class MoonshineEncoder: Module, @unchecked Sendable {
+    public let embedder: Embedder
     let layers: [EncoderLayer]
     let final_norm: UnitOffsetLayerNorm
 

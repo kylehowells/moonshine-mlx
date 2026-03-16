@@ -25,8 +25,8 @@ public struct TranscriptionSegment: Sendable {
 public final class MoonshineModel: Module, @unchecked Sendable {
     public let config: MoonshineModelConfig
 
-    let encoder: MoonshineEncoder
-    let decoder: MoonshineDecoder
+    public let encoder: MoonshineEncoder
+    public let decoder: MoonshineDecoder
     let proj_out: Linear
 
     public var tokenizer: MoonshineTokenizer?
@@ -57,7 +57,7 @@ public final class MoonshineModel: Module, @unchecked Sendable {
 
     /// Project decoder hidden state to vocabulary logits.
     /// Input: [B, T, D] — extracts last timestep, returns [B, vocab].
-    func getLogits(_ hidden: MLXArray) -> MLXArray {
+    public func getLogits(_ hidden: MLXArray) -> MLXArray {
         // Select last timestep: [B, T, D] -> [B, D] (matching Python's hidden[:, -1, :])
         let h: MLXArray
         if hidden.ndim == 3 {
@@ -325,6 +325,82 @@ public final class MoonshineModel: Module, @unchecked Sendable {
         return tokens.map { t in
             t < 128 ? String(UnicodeScalar(t)!) : "<\(t)>"
         }.joined()
+    }
+}
+
+// MARK: - Diagnostic Trace
+
+public struct TraceStep: Sendable {
+    public let step: Int
+    public let token: Int
+    public let logitMax: Float
+    public let logitMin: Float
+    public let logitMean: Float
+}
+
+public struct TraceResult: Sendable {
+    public let tokenCount: Int
+    public let hitEOS: Bool
+    public let memoryShape: [Int]
+    public let memoryFirst5: [Float]
+    public let memoryLast5: [Float]
+    public let steps: [TraceStep]
+}
+
+extension MoonshineModel {
+    /// Diagnostic: encode + decode step-by-step, dumping per-token stats.
+    public func traceGenerate(audio: MLXArray, maxSteps: Int = 200) -> TraceResult {
+        var input = audio
+        if input.ndim != 1 { input = input.squeezed() }
+
+        let features = encoder.embedder(input)
+        let encoded = encoder(features)
+        let memory = decoder.prepareMemory(encoded)
+        eval(memory)
+
+        let m0 = memory[0, 0, ..<5]
+        let mLast = memory[0, memory.dim(1) - 1, ..<5]
+        eval(m0, mLast)
+
+        var tokens: [Int] = [config.decoderStartTokenId]
+        var cache: [DecoderLayerCache]? = nil
+        var steps: [TraceStep] = []
+        var hitEOS = false
+
+        for step in 0 ..< maxSteps {
+            let tok = MLXArray(Int32(tokens.last!)).reshaped(1, 1)
+            let result = decoder(tok, memory: memory, cache: cache)
+            cache = result.cache
+            let logits = getLogits(result.hidden)
+            eval(logits)
+
+            let flat = logits.reshaped(-1)
+            let nt = argMax(flat, axis: 0).item(Int.self)
+            let topVal = flat[nt].item(Float.self)
+            let logMin = flat.min().item(Float.self)
+            let logMax = flat.max().item(Float.self)
+            let logMean = flat.mean().item(Float.self)
+
+            steps.append(TraceStep(
+                step: step, token: nt,
+                logitMax: logMax, logitMin: logMin, logitMean: logMean
+            ))
+
+            if nt == config.eosTokenId {
+                hitEOS = true
+                break
+            }
+            tokens.append(nt)
+        }
+
+        return TraceResult(
+            tokenCount: tokens.count - 1,
+            hitEOS: hitEOS,
+            memoryShape: memory.shape.map { $0 },
+            memoryFirst5: m0.asArray(Float.self),
+            memoryLast5: mLast.asArray(Float.self),
+            steps: steps
+        )
     }
 }
 

@@ -4,7 +4,7 @@ import MLXNN
 
 // MARK: - Decoder
 
-final class MoonshineDecoder: Module, @unchecked Sendable {
+public final class MoonshineDecoder: Module, @unchecked Sendable {
     let embed_tokens: Embedding
     let pos_emb: Embedding
     let proj: Linear?
@@ -36,7 +36,7 @@ final class MoonshineDecoder: Module, @unchecked Sendable {
     }
 
     /// Add learned positional embedding and project to decoder dim.
-    func prepareMemory(_ encoderOut: MLXArray, posOffset: Int = 0) -> MLXArray {
+    public func prepareMemory(_ encoderOut: MLXArray, posOffset: Int = 0) -> MLXArray {
         let T = encoderOut.dim(1)
         let positions = MLXArray(Int32(posOffset) ..< Int32(posOffset + T))
         var x = encoderOut + pos_emb(positions)

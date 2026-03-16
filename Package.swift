@@ -33,5 +33,14 @@ let package = Package(
                 .product(name: "MLX", package: "mlx-swift"),
             ]
         ),
+        .executableTarget(
+            name: "SwiftTrace",
+            dependencies: [
+                "MoonshineMLX",
+                .product(name: "MLX", package: "mlx-swift"),
+                .product(name: "MLXNN", package: "mlx-swift"),
+            ],
+            path: "Sources/SwiftTrace"
+        ),
     ]
 )
