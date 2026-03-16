@@ -1,0 +1,538 @@
+{
+  "benchmark": "moonshine-mlx-suite",
+  "timestamp": "2026-03-16T19:05:07",
+  "platform": "macOS-15.7.1-arm64-arm-64bit-Mach-O",
+  "swift_cli": "/Users/kylehowells/Developer/Github/moonshine-mlx/.build/arm64-apple-macosx/release/moonshine-mlx",
+  "results": [
+    {
+      "model": "tiny-fp32",
+      "description": "Tiny fp32 (HuggingFace)",
+      "parameters_millions": 34,
+      "model_size_mb": 0,
+      "cold_start": {
+        "wall_time_s": 1.803,
+        "inference_time_s": 0.1172,
+        "model_load_time_s": 1.6587,
+        "tokens": 18,
+        "peak_memory_mb": 255.8
+      },
+      "steady_state_6s": {
+        "transcription_time_s": 0.1,
+        "tokens": 18.0,
+        "tokens_per_second": 179.11,
+        "peak_memory_mb": 255.8
+      },
+      "audio_lengths": {
+        "6": {
+          "audio_duration_s": 6,
+          "transcription_time_s": 0.0988,
+          "tokens": 18,
+          "tokens_per_second": 182.11,
+          "peak_memory_mb": 255.8,
+          "real_time_factor": 0.0165
+        },
+        "30": {
+          "audio_duration_s": 30,
+          "transcription_time_s": 0.3351,
+          "tokens": 111,
+          "tokens_per_second": 331.24,
+          "peak_memory_mb": 863.5,
+          "real_time_factor": 0.0112
+        },
+        "60": {
+          "audio_duration_s": 60,
+          "transcription_time_s": 0.595,
+          "tokens": 216,
+          "tokens_per_second": 363.03,
+          "peak_memory_mb": 865.4,
+          "real_time_factor": 0.0099
+        },
+        "600": {
+          "audio_duration_s": 600,
+          "transcription_time_s": 5.2716,
+          "tokens": 2115,
+          "tokens_per_second": 401.21,
+          "peak_memory_mb": 900,
+          "real_time_factor": 0.0088
+        }
+      }
+    },
+    {
+      "model": "tiny-fp16",
+      "description": "Tiny fp16",
+      "parameters_millions": 34,
+      "model_size_mb": 88.1,
+      "cold_start": {
+        "wall_time_s": 0.355,
+        "inference_time_s": 0.1237,
+        "model_load_time_s": 0.2017,
+        "tokens": 18,
+        "peak_memory_mb": 198.1
+      },
+      "steady_state_6s": {
+        "transcription_time_s": 0.12,
+        "tokens": 18.0,
+        "tokens_per_second": 153.39,
+        "peak_memory_mb": 198.1
+      },
+      "audio_lengths": {
+        "6": {
+          "audio_duration_s": 6,
+          "transcription_time_s": 0.1064,
+          "tokens": 18,
+          "tokens_per_second": 169.14,
+          "peak_memory_mb": 198.1,
+          "real_time_factor": 0.0177
+        },
+        "30": {
+          "audio_duration_s": 30,
+          "transcription_time_s": 0.4471,
+          "tokens": 111,
+          "tokens_per_second": 248.29,
+          "peak_memory_mb": 806.6,
+          "real_time_factor": 0.0149
+        },
+        "60": {
+          "audio_duration_s": 60,
+          "transcription_time_s": 0.7746,
+          "tokens": 216,
+          "tokens_per_second": 278.85,
+          "peak_memory_mb": 808.5,
+          "real_time_factor": 0.0129
+        },
+        "600": {
+          "audio_duration_s": 600,
+          "transcription_time_s": 5.9555,
+          "tokens": 2115,
+          "tokens_per_second": 355.13,
+          "peak_memory_mb": 843.1,
+          "real_time_factor": 0.0099
+        }
+      }
+    },
+    {
+      "model": "tiny-8bit",
+      "description": "Tiny 8-bit quantized",
+      "parameters_millions": 34,
+      "model_size_mb": 59.9,
+      "cold_start": {
+        "wall_time_s": 0.356,
+        "inference_time_s": 0.1129,
+        "model_load_time_s": 0.2139,
+        "tokens": 18,
+        "peak_memory_mb": 136.8
+      },
+      "steady_state_6s": {
+        "transcription_time_s": 0.12,
+        "tokens": 18.0,
+        "tokens_per_second": 156.39,
+        "peak_memory_mb": 136.8
+      },
+      "audio_lengths": {
+        "6": {
+          "audio_duration_s": 6,
+          "transcription_time_s": 0.1136,
+          "tokens": 18,
+          "tokens_per_second": 158.4,
+          "peak_memory_mb": 136.8,
+          "real_time_factor": 0.0189
+        },
+        "30": {
+          "audio_duration_s": 30,
+          "transcription_time_s": 0.4236,
+          "tokens": 111,
+          "tokens_per_second": 262.03,
+          "peak_memory_mb": 750.3,
+          "real_time_factor": 0.0141
+        },
+        "60": {
+          "audio_duration_s": 60,
+          "transcription_time_s": 0.664,
+          "tokens": 216,
+          "tokens_per_second": 325.29,
+          "peak_memory_mb": 752.2,
+          "real_time_factor": 0.0111
+        },
+        "600": {
+          "audio_duration_s": 600,
+          "transcription_time_s": 5.4038,
+          "tokens": 2115,
+          "tokens_per_second": 391.39,
+          "peak_memory_mb": 786.8,
+          "real_time_factor": 0.009
+        }
+      }
+    },
+    {
+      "model": "tiny-4bit",
+      "description": "Tiny 4-bit quantized",
+      "parameters_millions": 34,
+      "model_size_mb": 44.8,
+      "cold_start": {
+        "wall_time_s": 0.357,
+        "inference_time_s": 0.116,
+        "model_load_time_s": 0.2107,
+        "tokens": 18,
+        "peak_memory_mb": 122
+      },
+      "steady_state_6s": {
+        "transcription_time_s": 0.11,
+        "tokens": 18.0,
+        "tokens_per_second": 160.04,
+        "peak_memory_mb": 122.0
+      },
+      "audio_lengths": {
+        "6": {
+          "audio_duration_s": 6,
+          "transcription_time_s": 0.1168,
+          "tokens": 18,
+          "tokens_per_second": 154.14,
+          "peak_memory_mb": 122,
+          "real_time_factor": 0.0195
+        },
+        "30": {
+          "audio_duration_s": 30,
+          "transcription_time_s": 0.4129,
+          "tokens": 111,
+          "tokens_per_second": 268.86,
+          "peak_memory_mb": 735.5,
+          "real_time_factor": 0.0138
+        },
+        "60": {
+          "audio_duration_s": 60,
+          "transcription_time_s": 0.6027,
+          "tokens": 213,
+          "tokens_per_second": 353.39,
+          "peak_memory_mb": 737.5,
+          "real_time_factor": 0.01
+        },
+        "600": {
+          "audio_duration_s": 600,
+          "transcription_time_s": 5.2601,
+          "tokens": 2107,
+          "tokens_per_second": 400.57,
+          "peak_memory_mb": 772,
+          "real_time_factor": 0.0088
+        }
+      }
+    },
+    {
+      "model": "small-fp16",
+      "description": "Small fp16",
+      "parameters_millions": 123,
+      "model_size_mb": 280.3,
+      "cold_start": {
+        "wall_time_s": 0.404,
+        "inference_time_s": 0.1404,
+        "model_load_time_s": 0.2296,
+        "tokens": 18,
+        "peak_memory_mb": 679.1
+      },
+      "steady_state_6s": {
+        "transcription_time_s": 0.14,
+        "tokens": 18.0,
+        "tokens_per_second": 127.12,
+        "peak_memory_mb": 679.1
+      },
+      "audio_lengths": {
+        "6": {
+          "audio_duration_s": 6,
+          "transcription_time_s": 0.1395,
+          "tokens": 18,
+          "tokens_per_second": 129.02,
+          "peak_memory_mb": 679.1,
+          "real_time_factor": 0.0233
+        },
+        "30": {
+          "audio_duration_s": 30,
+          "transcription_time_s": 0.5361,
+          "tokens": 110,
+          "tokens_per_second": 205.17,
+          "peak_memory_mb": 1153.3,
+          "real_time_factor": 0.0179
+        },
+        "60": {
+          "audio_duration_s": 60,
+          "transcription_time_s": 1.0126,
+          "tokens": 213,
+          "tokens_per_second": 210.36,
+          "peak_memory_mb": 1155.2,
+          "real_time_factor": 0.0169
+        },
+        "600": {
+          "audio_duration_s": 600,
+          "transcription_time_s": 13.1944,
+          "tokens": 2121,
+          "tokens_per_second": 160.75,
+          "peak_memory_mb": 1189.7,
+          "real_time_factor": 0.022
+        }
+      }
+    },
+    {
+      "model": "small-8bit",
+      "description": "Small 8-bit quantized",
+      "parameters_millions": 123,
+      "model_size_mb": 212.5,
+      "cold_start": {
+        "wall_time_s": 0.506,
+        "inference_time_s": 0.1335,
+        "model_load_time_s": 0.3185,
+        "tokens": 18,
+        "peak_memory_mb": 599.1
+      },
+      "steady_state_6s": {
+        "transcription_time_s": 0.11,
+        "tokens": 18.0,
+        "tokens_per_second": 170.77,
+        "peak_memory_mb": 599.1
+      },
+      "audio_lengths": {
+        "6": {
+          "audio_duration_s": 6,
+          "transcription_time_s": 0.1085,
+          "tokens": 18,
+          "tokens_per_second": 165.85,
+          "peak_memory_mb": 599.1,
+          "real_time_factor": 0.0181
+        },
+        "30": {
+          "audio_duration_s": 30,
+          "transcription_time_s": 0.378,
+          "tokens": 110,
+          "tokens_per_second": 290.99,
+          "peak_memory_mb": 1073.4,
+          "real_time_factor": 0.0126
+        },
+        "60": {
+          "audio_duration_s": 60,
+          "transcription_time_s": 0.6787,
+          "tokens": 213,
+          "tokens_per_second": 313.86,
+          "peak_memory_mb": 1075.3,
+          "real_time_factor": 0.0113
+        },
+        "600": {
+          "audio_duration_s": 600,
+          "transcription_time_s": 7.9782,
+          "tokens": 2118,
+          "tokens_per_second": 265.47,
+          "peak_memory_mb": 1109.8,
+          "real_time_factor": 0.0133
+        }
+      }
+    },
+    {
+      "model": "small-4bit",
+      "description": "Small 4-bit quantized",
+      "parameters_millions": 123,
+      "model_size_mb": 176.3,
+      "cold_start": {
+        "wall_time_s": 0.391,
+        "inference_time_s": 0.1113,
+        "model_load_time_s": 0.2478,
+        "tokens": 18,
+        "peak_memory_mb": 562.9
+      },
+      "steady_state_6s": {
+        "transcription_time_s": 0.11,
+        "tokens": 18.0,
+        "tokens_per_second": 166.61,
+        "peak_memory_mb": 562.9
+      },
+      "audio_lengths": {
+        "6": {
+          "audio_duration_s": 6,
+          "transcription_time_s": 0.0998,
+          "tokens": 18,
+          "tokens_per_second": 180.28,
+          "peak_memory_mb": 562.9,
+          "real_time_factor": 0.0166
+        },
+        "30": {
+          "audio_duration_s": 30,
+          "transcription_time_s": 0.4463,
+          "tokens": 109,
+          "tokens_per_second": 244.25,
+          "peak_memory_mb": 1037.1,
+          "real_time_factor": 0.0149
+        },
+        "60": {
+          "audio_duration_s": 60,
+          "transcription_time_s": 0.6669,
+          "tokens": 213,
+          "tokens_per_second": 319.38,
+          "peak_memory_mb": 1039,
+          "real_time_factor": 0.0111
+        },
+        "600": {
+          "audio_duration_s": 600,
+          "transcription_time_s": 7.3155,
+          "tokens": 2108,
+          "tokens_per_second": 288.16,
+          "peak_memory_mb": 1073.6,
+          "real_time_factor": 0.0122
+        }
+      }
+    },
+    {
+      "model": "medium-fp16",
+      "description": "Medium fp16",
+      "parameters_millions": 245,
+      "model_size_mb": 531.8,
+      "cold_start": {
+        "wall_time_s": 0.617,
+        "inference_time_s": 0.219,
+        "model_load_time_s": 0.3539,
+        "tokens": 19,
+        "peak_memory_mb": 1246.7
+      },
+      "steady_state_6s": {
+        "transcription_time_s": 0.21,
+        "tokens": 19.0,
+        "tokens_per_second": 92.18,
+        "peak_memory_mb": 1246.7
+      },
+      "audio_lengths": {
+        "6": {
+          "audio_duration_s": 6,
+          "transcription_time_s": 0.2034,
+          "tokens": 19,
+          "tokens_per_second": 93.41,
+          "peak_memory_mb": 1246.7,
+          "real_time_factor": 0.0339
+        },
+        "30": {
+          "audio_duration_s": 30,
+          "transcription_time_s": 0.9906,
+          "tokens": 113,
+          "tokens_per_second": 114.07,
+          "peak_memory_mb": 1911.4,
+          "real_time_factor": 0.033
+        },
+        "60": {
+          "audio_duration_s": 60,
+          "transcription_time_s": 1.6852,
+          "tokens": 216,
+          "tokens_per_second": 128.18,
+          "peak_memory_mb": 1913.4,
+          "real_time_factor": 0.0281
+        },
+        "600": {
+          "audio_duration_s": 600,
+          "transcription_time_s": 20.9363,
+          "tokens": 2133,
+          "tokens_per_second": 101.88,
+          "peak_memory_mb": 1947.9,
+          "real_time_factor": 0.0349
+        }
+      }
+    },
+    {
+      "model": "medium-8bit",
+      "description": "Medium 8-bit quantized",
+      "parameters_millions": 245,
+      "model_size_mb": 316.5,
+      "cold_start": {
+        "wall_time_s": 0.681,
+        "inference_time_s": 0.1762,
+        "model_load_time_s": 0.4584,
+        "tokens": 19,
+        "peak_memory_mb": 566.5
+      },
+      "steady_state_6s": {
+        "transcription_time_s": 0.15,
+        "tokens": 19.0,
+        "tokens_per_second": 128.18,
+        "peak_memory_mb": 566.5
+      },
+      "audio_lengths": {
+        "6": {
+          "audio_duration_s": 6,
+          "transcription_time_s": 0.1429,
+          "tokens": 19,
+          "tokens_per_second": 132.96,
+          "peak_memory_mb": 566.5,
+          "real_time_factor": 0.0238
+        },
+        "30": {
+          "audio_duration_s": 30,
+          "transcription_time_s": 0.6092,
+          "tokens": 113,
+          "tokens_per_second": 185.48,
+          "peak_memory_mb": 1333,
+          "real_time_factor": 0.0203
+        },
+        "60": {
+          "audio_duration_s": 60,
+          "transcription_time_s": 1.1701,
+          "tokens": 216,
+          "tokens_per_second": 184.6,
+          "peak_memory_mb": 1334.9,
+          "real_time_factor": 0.0195
+        },
+        "600": {
+          "audio_duration_s": 600,
+          "transcription_time_s": 11.8541,
+          "tokens": 2133,
+          "tokens_per_second": 179.94,
+          "peak_memory_mb": 1369.4,
+          "real_time_factor": 0.0198
+        }
+      }
+    },
+    {
+      "model": "medium-4bit",
+      "description": "Medium 4-bit quantized",
+      "parameters_millions": 245,
+      "model_size_mb": 201.6,
+      "cold_start": {
+        "wall_time_s": 0.457,
+        "inference_time_s": 0.1476,
+        "model_load_time_s": 0.2755,
+        "tokens": 19,
+        "peak_memory_mb": 452.6
+      },
+      "steady_state_6s": {
+        "transcription_time_s": 0.14,
+        "tokens": 19.0,
+        "tokens_per_second": 140.35,
+        "peak_memory_mb": 452.6
+      },
+      "audio_lengths": {
+        "6": {
+          "audio_duration_s": 6,
+          "transcription_time_s": 0.1336,
+          "tokens": 19,
+          "tokens_per_second": 142.19,
+          "peak_memory_mb": 452.6,
+          "real_time_factor": 0.0223
+        },
+        "30": {
+          "audio_duration_s": 30,
+          "transcription_time_s": 0.5662,
+          "tokens": 111,
+          "tokens_per_second": 196.06,
+          "peak_memory_mb": 1219,
+          "real_time_factor": 0.0189
+        },
+        "60": {
+          "audio_duration_s": 60,
+          "transcription_time_s": 1.0496,
+          "tokens": 214,
+          "tokens_per_second": 203.89,
+          "peak_memory_mb": 1220.9,
+          "real_time_factor": 0.0175
+        },
+        "600": {
+          "audio_duration_s": 600,
+          "transcription_time_s": 11.2455,
+          "tokens": 2126,
+          "tokens_per_second": 189.05,
+          "peak_memory_mb": 1255.5,
+          "real_time_factor": 0.0187
+        }
+      }
+    }
+  ]
+}
