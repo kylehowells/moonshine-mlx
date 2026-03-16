@@ -1,6 +1,6 @@
 {
   "benchmark": "moonshine-mlx-python-vs-swift",
-  "timestamp": "2026-03-16T14:59:48",
+  "timestamp": "2026-03-16T15:15:03",
   "device": "Apple Silicon (MLX)",
   "num_warmup": 1,
   "num_runs": 3,
@@ -11,42 +11,42 @@
       "audio": "genesis_1_1",
       "audio_duration_s": 6.6,
       "model_mb": 176.2,
-      "load_time_s": 0.3135,
+      "load_time_s": 0.286,
       "runs": [
         {
           "run": 1,
-          "time_s": 0.0884,
+          "time_s": 0.0825,
           "tokens": 18,
-          "tps": 203.7,
-          "rtf": 0.0134,
+          "tps": 218.2,
+          "rtf": 0.0125,
           "peak_mb": 264.7,
           "wer": 0.0,
           "text": "Genesis 1:1 In the beginning, God created the heaven and the earth."
         },
         {
           "run": 2,
-          "time_s": 0.0677,
+          "time_s": 0.0655,
           "tokens": 18,
-          "tps": 266.0,
-          "rtf": 0.0103,
+          "tps": 274.6,
+          "rtf": 0.0099,
           "peak_mb": 264.7,
           "wer": 0.0,
           "text": "Genesis 1:1 In the beginning, God created the heaven and the earth."
         },
         {
           "run": 3,
-          "time_s": 0.0863,
+          "time_s": 0.0697,
           "tokens": 18,
-          "tps": 208.6,
-          "rtf": 0.0131,
+          "tps": 258.2,
+          "rtf": 0.0106,
           "peak_mb": 264.7,
           "wer": 0.0,
           "text": "Genesis 1:1 In the beginning, God created the heaven and the earth."
         }
       ],
-      "avg_time_s": 0.0808,
-      "avg_tps": 226.1,
-      "avg_rtf": 0.0123,
+      "avg_time_s": 0.0726,
+      "avg_tps": 250.3,
+      "avg_rtf": 0.011,
       "avg_peak_mb": 264.7,
       "avg_wer": 0.0
     },
@@ -54,51 +54,51 @@
       "impl": "swift-mlx",
       "model": "tiny",
       "audio": "genesis_1_1",
-      "audio_duration_s": 6.586956521739131,
+      "audio_duration_s": 6.604651162790698,
       "runs": [
         {
           "run": 1,
-          "time_s": 0.0606,
+          "time_s": 0.0568,
           "tokens": 18,
-          "tps": 296.9,
-          "rtf": 0.0092,
+          "tps": 316.9,
+          "rtf": 0.0086,
           "peak_mb": 265.4,
           "wer": 0.0,
           "text": "Genesis 1:1 In the beginning, God created the heaven and the earth.",
-          "wall_time_s": 1.7422,
-          "load_time_s": 1.6467
+          "wall_time_s": 1.7532,
+          "load_time_s": 1.6616
         },
         {
           "run": 2,
-          "time_s": 0.0549,
+          "time_s": 0.058,
           "tokens": 18,
-          "tps": 328.0,
-          "rtf": 0.0083,
+          "tps": 310.2,
+          "rtf": 0.0088,
           "peak_mb": 265.4,
           "wer": 0.0,
           "text": "Genesis 1:1 In the beginning, God created the heaven and the earth.",
-          "wall_time_s": 1.8061,
-          "load_time_s": 1.7158
+          "wall_time_s": 1.8181,
+          "load_time_s": 1.7246
         },
         {
           "run": 3,
-          "time_s": 0.0564,
+          "time_s": 0.073,
           "tokens": 18,
-          "tps": 319.0,
-          "rtf": 0.0085,
+          "tps": 246.7,
+          "rtf": 0.0111,
           "peak_mb": 265.4,
           "wer": 0.0,
           "text": "Genesis 1:1 In the beginning, God created the heaven and the earth.",
-          "wall_time_s": 1.7625,
-          "load_time_s": 1.6717
+          "wall_time_s": 1.7531,
+          "load_time_s": 1.6442
         }
       ],
-      "avg_time_s": 0.0573,
-      "avg_tps": 314.6,
-      "avg_rtf": 0.0087,
+      "avg_time_s": 0.0626,
+      "avg_tps": 291.3,
+      "avg_rtf": 0.0095,
       "avg_peak_mb": 265.4,
       "avg_wer": 0.0,
-      "avg_wall_time_s": 1.7703
+      "avg_wall_time_s": 1.7748
     },
     {
       "impl": "python-mlx",
@@ -106,42 +106,42 @@
       "audio": "genesis_1_2",
       "audio_duration_s": 13.15,
       "model_mb": 176.2,
-      "load_time_s": 0.1996,
+      "load_time_s": 0.1993,
       "runs": [
         {
           "run": 1,
-          "time_s": 0.1568,
+          "time_s": 0.137,
           "tokens": 38,
-          "tps": 242.4,
-          "rtf": 0.0119,
+          "tps": 277.3,
+          "rtf": 0.0104,
           "peak_mb": 584.3,
           "wer": 0.0,
           "text": "Genesis 1:2 And the earth was without form and void, and darkness was on the face of the deep, and the spirit of God moved on the face of the waters."
         },
         {
           "run": 2,
-          "time_s": 0.134,
+          "time_s": 0.1083,
           "tokens": 38,
-          "tps": 283.6,
-          "rtf": 0.0102,
+          "tps": 350.8,
+          "rtf": 0.0082,
           "peak_mb": 584.3,
           "wer": 0.0,
           "text": "Genesis 1:2 And the earth was without form and void, and darkness was on the face of the deep, and the spirit of God moved on the face of the waters."
         },
         {
           "run": 3,
-          "time_s": 0.1329,
+          "time_s": 0.1461,
           "tokens": 38,
-          "tps": 286.0,
-          "rtf": 0.0101,
+          "tps": 260.0,
+          "rtf": 0.0111,
           "peak_mb": 584.3,
           "wer": 0.0,
           "text": "Genesis 1:2 And the earth was without form and void, and darkness was on the face of the deep, and the spirit of God moved on the face of the waters."
         }
       ],
-      "avg_time_s": 0.1412,
-      "avg_tps": 270.7,
-      "avg_rtf": 0.0107,
+      "avg_time_s": 0.1305,
+      "avg_tps": 296.0,
+      "avg_rtf": 0.0099,
       "avg_peak_mb": 584.3,
       "avg_wer": 0.0
     },
@@ -149,51 +149,51 @@
       "impl": "swift-mlx",
       "model": "tiny",
       "audio": "genesis_1_2",
-      "audio_duration_s": 13.157303370786517,
+      "audio_duration_s": 13.074074074074074,
       "runs": [
         {
           "run": 1,
-          "time_s": 0.1171,
+          "time_s": 0.1059,
           "tokens": 38,
-          "tps": 324.6,
-          "rtf": 0.0089,
+          "tps": 359.0,
+          "rtf": 0.0081,
           "peak_mb": 404.5,
           "wer": 0.0,
           "text": "Genesis 1:2 And the earth was without form and void, and darkness was on the face of the deep, and the spirit of God moved on the face of the waters.",
-          "wall_time_s": 1.8142,
-          "load_time_s": 1.6578
+          "wall_time_s": 1.8172,
+          "load_time_s": 1.6751
         },
         {
           "run": 2,
-          "time_s": 0.1033,
+          "time_s": 0.1136,
           "tokens": 38,
-          "tps": 367.9,
-          "rtf": 0.0079,
+          "tps": 334.5,
+          "rtf": 0.0086,
           "peak_mb": 404.5,
           "wer": 0.0,
           "text": "Genesis 1:2 And the earth was without form and void, and darkness was on the face of the deep, and the spirit of God moved on the face of the waters.",
-          "wall_time_s": 1.7975,
-          "load_time_s": 1.6573
+          "wall_time_s": 1.7966,
+          "load_time_s": 1.6458
         },
         {
           "run": 3,
-          "time_s": 0.1027,
+          "time_s": 0.1124,
           "tokens": 38,
-          "tps": 370.0,
-          "rtf": 0.0078,
+          "tps": 338.1,
+          "rtf": 0.0085,
           "peak_mb": 404.5,
           "wer": 0.0,
           "text": "Genesis 1:2 And the earth was without form and void, and darkness was on the face of the deep, and the spirit of God moved on the face of the waters.",
-          "wall_time_s": 1.7938,
-          "load_time_s": 1.6547
+          "wall_time_s": 1.7886,
+          "load_time_s": 1.64
         }
       ],
-      "avg_time_s": 0.1077,
-      "avg_tps": 354.2,
-      "avg_rtf": 0.0082,
+      "avg_time_s": 0.1106,
+      "avg_tps": 343.9,
+      "avg_rtf": 0.0084,
       "avg_peak_mb": 404.5,
       "avg_wer": 0.0,
-      "avg_wall_time_s": 1.8018
+      "avg_wall_time_s": 1.8008
     },
     {
       "impl": "python-mlx",
@@ -201,42 +201,42 @@
       "audio": "genesis_1_3",
       "audio_duration_s": 6.575,
       "model_mb": 176.2,
-      "load_time_s": 0.1997,
+      "load_time_s": 0.1964,
       "runs": [
         {
           "run": 1,
-          "time_s": 0.0941,
+          "time_s": 0.1062,
           "tokens": 20,
-          "tps": 212.5,
-          "rtf": 0.0143,
+          "tps": 188.3,
+          "rtf": 0.0162,
           "peak_mb": 459.3,
           "wer": 0.0,
           "text": "Genesis 1:3 And God said, Let there be light, and there was light."
         },
         {
           "run": 2,
-          "time_s": 0.0671,
+          "time_s": 0.0676,
           "tokens": 20,
-          "tps": 298.2,
-          "rtf": 0.0102,
+          "tps": 295.9,
+          "rtf": 0.0103,
           "peak_mb": 459.3,
           "wer": 0.0,
           "text": "Genesis 1:3 And God said, Let there be light, and there was light."
         },
         {
           "run": 3,
-          "time_s": 0.083,
+          "time_s": 0.0964,
           "tokens": 20,
-          "tps": 240.9,
-          "rtf": 0.0126,
+          "tps": 207.5,
+          "rtf": 0.0147,
           "peak_mb": 459.3,
           "wer": 0.0,
           "text": "Genesis 1:3 And God said, Let there be light, and there was light."
         }
       ],
-      "avg_time_s": 0.0814,
-      "avg_tps": 250.5,
-      "avg_rtf": 0.0124,
+      "avg_time_s": 0.0901,
+      "avg_tps": 230.6,
+      "avg_rtf": 0.0137,
       "avg_peak_mb": 459.3,
       "avg_wer": 0.0
     },
@@ -244,51 +244,51 @@
       "impl": "swift-mlx",
       "model": "tiny",
       "audio": "genesis_1_3",
-      "audio_duration_s": 6.59349593495935,
+      "audio_duration_s": 6.56910569105691,
       "runs": [
         {
           "run": 1,
-          "time_s": 0.0811,
+          "time_s": 0.0808,
           "tokens": 20,
-          "tps": 246.5,
+          "tps": 247.5,
           "rtf": 0.0123,
           "peak_mb": 265.1,
           "wer": 0.0,
           "text": "Genesis 1:3 And God said, Let there be light, and there was light.",
-          "wall_time_s": 1.7998,
-          "load_time_s": 1.6828
+          "wall_time_s": 1.7997,
+          "load_time_s": 1.6837
         },
         {
           "run": 2,
-          "time_s": 0.0612,
+          "time_s": 0.0598,
           "tokens": 20,
-          "tps": 327.0,
-          "rtf": 0.0093,
+          "tps": 334.5,
+          "rtf": 0.0091,
           "peak_mb": 265.1,
           "wer": 0.0,
           "text": "Genesis 1:3 And God said, Let there be light, and there was light.",
-          "wall_time_s": 1.759,
-          "load_time_s": 1.6636
+          "wall_time_s": 1.7368,
+          "load_time_s": 1.6399
         },
         {
           "run": 3,
-          "time_s": 0.0626,
+          "time_s": 0.0801,
           "tokens": 20,
-          "tps": 319.4,
-          "rtf": 0.0095,
+          "tps": 249.8,
+          "rtf": 0.0122,
           "peak_mb": 265.1,
           "wer": 0.0,
           "text": "Genesis 1:3 And God said, Let there be light, and there was light.",
-          "wall_time_s": 1.7587,
-          "load_time_s": 1.6468
+          "wall_time_s": 1.8011,
+          "load_time_s": 1.6845
         }
       ],
-      "avg_time_s": 0.0683,
-      "avg_tps": 297.6,
-      "avg_rtf": 0.0104,
+      "avg_time_s": 0.0736,
+      "avg_tps": 277.3,
+      "avg_rtf": 0.0112,
       "avg_peak_mb": 265.1,
       "avg_wer": 0.0,
-      "avg_wall_time_s": 1.7725
+      "avg_wall_time_s": 1.7792
     },
     {
       "impl": "python-mlx",
@@ -296,13 +296,13 @@
       "audio": "genesis_1_1",
       "audio_duration_s": 6.6,
       "model_mb": 560.5,
-      "load_time_s": 0.2396,
+      "load_time_s": 0.2817,
       "runs": [
         {
           "run": 1,
-          "time_s": 0.0823,
+          "time_s": 0.0825,
           "tokens": 18,
-          "tps": 218.8,
+          "tps": 218.3,
           "rtf": 0.0125,
           "peak_mb": 931.3,
           "wer": 0.0,
@@ -310,28 +310,28 @@
         },
         {
           "run": 2,
-          "time_s": 0.0874,
+          "time_s": 0.0813,
           "tokens": 18,
-          "tps": 205.9,
-          "rtf": 0.0132,
+          "tps": 221.5,
+          "rtf": 0.0123,
           "peak_mb": 931.3,
           "wer": 0.0,
           "text": "Genesis 1:1 In the beginning, God created the heaven and the earth."
         },
         {
           "run": 3,
-          "time_s": 0.0891,
+          "time_s": 0.0861,
           "tokens": 18,
-          "tps": 202.1,
-          "rtf": 0.0135,
+          "tps": 209.1,
+          "rtf": 0.013,
           "peak_mb": 931.3,
           "wer": 0.0,
           "text": "Genesis 1:1 In the beginning, God created the heaven and the earth."
         }
       ],
-      "avg_time_s": 0.0863,
-      "avg_tps": 208.9,
-      "avg_rtf": 0.0131,
+      "avg_time_s": 0.0833,
+      "avg_tps": 216.3,
+      "avg_rtf": 0.0126,
       "avg_peak_mb": 931.3,
       "avg_wer": 0.0
     },
@@ -339,51 +339,51 @@
       "impl": "swift-mlx",
       "model": "small",
       "audio": "genesis_1_1",
-      "audio_duration_s": 6.609090909090909,
+      "audio_duration_s": 6.581081081081081,
       "runs": [
         {
           "run": 1,
-          "time_s": 0.0727,
+          "time_s": 0.0974,
           "tokens": 18,
-          "tps": 247.4,
-          "rtf": 0.011,
+          "tps": 184.8,
+          "rtf": 0.0148,
           "peak_mb": 796.6,
           "wer": 0.0,
           "text": "Genesis 1:1 In the beginning, God created the heaven and the earth.",
-          "wall_time_s": 1.8154,
-          "load_time_s": 1.7033
+          "wall_time_s": 1.8591,
+          "load_time_s": 1.7233
         },
         {
           "run": 2,
-          "time_s": 0.0736,
+          "time_s": 0.073,
           "tokens": 18,
-          "tps": 244.5,
+          "tps": 246.7,
+          "rtf": 0.0111,
+          "peak_mb": 796.6,
+          "wer": 0.0,
+          "text": "Genesis 1:1 In the beginning, God created the heaven and the earth.",
+          "wall_time_s": 1.7948,
+          "load_time_s": 1.6825
+        },
+        {
+          "run": 3,
+          "time_s": 0.0742,
+          "tokens": 18,
+          "tps": 242.6,
           "rtf": 0.0112,
           "peak_mb": 796.6,
           "wer": 0.0,
           "text": "Genesis 1:1 In the beginning, God created the heaven and the earth.",
-          "wall_time_s": 1.8782,
-          "load_time_s": 1.7647
-        },
-        {
-          "run": 3,
-          "time_s": 0.076,
-          "tokens": 18,
-          "tps": 237.0,
-          "rtf": 0.0115,
-          "peak_mb": 796.6,
-          "wer": 0.0,
-          "text": "Genesis 1:1 In the beginning, God created the heaven and the earth.",
-          "wall_time_s": 1.8245,
-          "load_time_s": 1.7096
+          "wall_time_s": 1.827,
+          "load_time_s": 1.7146
         }
       ],
-      "avg_time_s": 0.0741,
-      "avg_tps": 243.0,
-      "avg_rtf": 0.0112,
+      "avg_time_s": 0.0815,
+      "avg_tps": 224.7,
+      "avg_rtf": 0.0124,
       "avg_peak_mb": 796.6,
       "avg_wer": 0.0,
-      "avg_wall_time_s": 1.8394
+      "avg_wall_time_s": 1.827
     },
     {
       "impl": "python-mlx",
@@ -391,94 +391,94 @@
       "audio": "genesis_1_2",
       "audio_duration_s": 13.15,
       "model_mb": 560.5,
-      "load_time_s": 0.2215,
+      "load_time_s": 0.2173,
       "runs": [
         {
           "run": 1,
-          "time_s": 0.1758,
+          "time_s": 0.1631,
           "tokens": 38,
-          "tps": 216.2,
-          "rtf": 0.0134,
-          "peak_mb": 1126.8,
+          "tps": 233.0,
+          "rtf": 0.0124,
+          "peak_mb": 1126.9,
           "wer": 0.0,
           "text": "Genesis 1:2 And the earth was without form and void, and darkness was on the face of the deep, and the Spirit of God moved on the face of the waters."
         },
         {
           "run": 2,
-          "time_s": 0.1613,
+          "time_s": 0.1682,
           "tokens": 38,
-          "tps": 235.5,
-          "rtf": 0.0123,
-          "peak_mb": 1126.8,
+          "tps": 226.0,
+          "rtf": 0.0128,
+          "peak_mb": 1126.9,
           "wer": 0.0,
           "text": "Genesis 1:2 And the earth was without form and void, and darkness was on the face of the deep, and the Spirit of God moved on the face of the waters."
         },
         {
           "run": 3,
-          "time_s": 0.1659,
+          "time_s": 0.1719,
           "tokens": 38,
-          "tps": 229.1,
-          "rtf": 0.0126,
-          "peak_mb": 1126.8,
+          "tps": 221.0,
+          "rtf": 0.0131,
+          "peak_mb": 1126.9,
           "wer": 0.0,
           "text": "Genesis 1:2 And the earth was without form and void, and darkness was on the face of the deep, and the Spirit of God moved on the face of the waters."
         }
       ],
       "avg_time_s": 0.1677,
-      "avg_tps": 226.9,
+      "avg_tps": 226.7,
       "avg_rtf": 0.0128,
-      "avg_peak_mb": 1126.8,
+      "avg_peak_mb": 1126.9,
       "avg_wer": 0.0
     },
     {
       "impl": "swift-mlx",
       "model": "small",
       "audio": "genesis_1_2",
-      "audio_duration_s": 13.203883495145632,
+      "audio_duration_s": 13.200000000000001,
       "runs": [
         {
           "run": 1,
-          "time_s": 0.136,
+          "time_s": 0.132,
           "tokens": 38,
-          "tps": 279.5,
-          "rtf": 0.0103,
+          "tps": 287.8,
+          "rtf": 0.01,
           "peak_mb": 950,
           "wer": 0.1034,
           "text": "Genesis one, two, and the earth was without form and void, and darkness was on the face of the deep, and the spirit of God moved on the face of the waters.",
-          "wall_time_s": 1.8782,
-          "load_time_s": 1.7016
+          "wall_time_s": 1.8913,
+          "load_time_s": 1.7201
         },
         {
           "run": 2,
-          "time_s": 0.1359,
+          "time_s": 0.1337,
           "tokens": 38,
-          "tps": 279.6,
-          "rtf": 0.0103,
+          "tps": 284.3,
+          "rtf": 0.0102,
           "peak_mb": 950,
           "wer": 0.1034,
           "text": "Genesis one, two, and the earth was without form and void, and darkness was on the face of the deep, and the spirit of God moved on the face of the waters.",
-          "wall_time_s": 1.8652,
-          "load_time_s": 1.6903
+          "wall_time_s": 2.0075,
+          "load_time_s": 1.8333
         },
         {
           "run": 3,
-          "time_s": 0.1326,
+          "time_s": 0.1344,
           "tokens": 38,
-          "tps": 286.6,
-          "rtf": 0.0101,
+          "tps": 282.8,
+          "rtf": 0.0102,
           "peak_mb": 950,
           "wer": 0.1034,
           "text": "Genesis one, two, and the earth was without form and void, and darkness was on the face of the deep, and the spirit of God moved on the face of the waters.",
-          "wall_time_s": 1.8825,
-          "load_time_s": 1.7107
+          "wall_time_s": 1.9161,
+          "load_time_s": 1.7413
         }
       ],
-      "avg_time_s": 0.1348,
-      "avg_tps": 281.9,
-      "avg_rtf": 0.0102,
+      "avg_time_s": 0.1334,
+      "avg_tps": 285.0,
+      "avg_rtf": 0.0101,
       "avg_peak_mb": 950.0,
       "avg_wer": 0.1034,
-      "avg_wall_time_s": 1.8753
+      "avg_wall_time_s": 1.9383
     },
     {
       "impl": "python-mlx",
@@ -486,42 +486,42 @@
       "audio": "genesis_1_3",
       "audio_duration_s": 6.575,
       "model_mb": 560.5,
-      "load_time_s": 0.2154,
+      "load_time_s": 0.2287,
       "runs": [
         {
           "run": 1,
-          "time_s": 0.0888,
+          "time_s": 0.0938,
           "tokens": 20,
-          "tps": 225.3,
-          "rtf": 0.0135,
-          "peak_mb": 931.1,
-          "wer": 0.0,
-          "text": "Genesis 1:3 And God said, Let there be light, and there was light."
-        },
-        {
-          "run": 2,
-          "time_s": 0.0939,
-          "tokens": 20,
-          "tps": 213.1,
+          "tps": 213.2,
           "rtf": 0.0143,
           "peak_mb": 931.1,
           "wer": 0.0,
           "text": "Genesis 1:3 And God said, Let there be light, and there was light."
         },
         {
-          "run": 3,
-          "time_s": 0.0966,
+          "run": 2,
+          "time_s": 0.0971,
           "tokens": 20,
-          "tps": 207.0,
-          "rtf": 0.0147,
+          "tps": 205.9,
+          "rtf": 0.0148,
+          "peak_mb": 931.1,
+          "wer": 0.0,
+          "text": "Genesis 1:3 And God said, Let there be light, and there was light."
+        },
+        {
+          "run": 3,
+          "time_s": 0.107,
+          "tokens": 20,
+          "tps": 186.8,
+          "rtf": 0.0163,
           "peak_mb": 931.1,
           "wer": 0.0,
           "text": "Genesis 1:3 And God said, Let there be light, and there was light."
         }
       ],
-      "avg_time_s": 0.0931,
-      "avg_tps": 215.1,
-      "avg_rtf": 0.0142,
+      "avg_time_s": 0.0993,
+      "avg_tps": 202.0,
+      "avg_rtf": 0.0151,
       "avg_peak_mb": 931.1,
       "avg_wer": 0.0
     },
@@ -529,51 +529,51 @@
       "impl": "swift-mlx",
       "model": "small",
       "audio": "genesis_1_3",
-      "audio_duration_s": 6.584070796460177,
+      "audio_duration_s": 6.552,
       "runs": [
         {
           "run": 1,
-          "time_s": 0.0744,
+          "time_s": 0.0819,
           "tokens": 20,
-          "tps": 268.7,
-          "rtf": 0.0113,
+          "tps": 244.3,
+          "rtf": 0.0125,
           "peak_mb": 796.5,
           "wer": 0.0,
           "text": "Genesis 1:3 And God said, Let there be light, and there was light.",
-          "wall_time_s": 1.8662,
-          "load_time_s": 1.7318
+          "wall_time_s": 1.8278,
+          "load_time_s": 1.7062
         },
         {
           "run": 2,
           "time_s": 0.0791,
           "tokens": 20,
-          "tps": 252.8,
+          "tps": 252.7,
           "rtf": 0.012,
           "peak_mb": 796.5,
           "wer": 0.0,
           "text": "Genesis 1:3 And God said, Let there be light, and there was light.",
-          "wall_time_s": 1.802,
-          "load_time_s": 1.6843
+          "wall_time_s": 1.8641,
+          "load_time_s": 1.743
         },
         {
           "run": 3,
-          "time_s": 0.0823,
+          "time_s": 0.0801,
           "tokens": 20,
-          "tps": 243.0,
-          "rtf": 0.0125,
+          "tps": 249.6,
+          "rtf": 0.0122,
           "peak_mb": 796.5,
           "wer": 0.0,
           "text": "Genesis 1:3 And God said, Let there be light, and there was light.",
-          "wall_time_s": 1.8392,
-          "load_time_s": 1.7191
+          "wall_time_s": 1.943,
+          "load_time_s": 1.8239
         }
       ],
-      "avg_time_s": 0.0786,
-      "avg_tps": 254.8,
-      "avg_rtf": 0.0119,
+      "avg_time_s": 0.0804,
+      "avg_tps": 248.9,
+      "avg_rtf": 0.0122,
       "avg_peak_mb": 796.5,
       "avg_wer": 0.0,
-      "avg_wall_time_s": 1.8358
+      "avg_wall_time_s": 1.8783
     }
   ]
 }
