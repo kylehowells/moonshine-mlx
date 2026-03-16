@@ -56,9 +56,17 @@ public final class MoonshineModel: Module, @unchecked Sendable {
     // MARK: - Logits
 
     /// Project decoder hidden state to vocabulary logits.
-    /// Input: [B, T, D] or [B, D] — extracts last timestep if needed.
+    /// Input: [B, T, D] — extracts last timestep, returns [B, vocab].
     func getLogits(_ hidden: MLXArray) -> MLXArray {
-        let h = hidden.ndim == 3 ? hidden[0..., (-1)..., 0...] : hidden
+        // Select last timestep: [B, T, D] -> [B, D] (matching Python's hidden[:, -1, :])
+        let h: MLXArray
+        if hidden.ndim == 3 {
+            let B = hidden.dim(0)
+            let D = hidden.dim(2)
+            h = hidden[0..., hidden.dim(1) - 1, 0...].reshaped(B, D)
+        } else {
+            h = hidden
+        }
         if config.tieWordEmbeddings {
             return h.matmul(decoder.embed_tokens.weight.transposed())
         }
