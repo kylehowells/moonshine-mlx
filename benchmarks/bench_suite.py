@@ -276,7 +276,7 @@ def main():
     parser.add_argument("--models", type=str, default=None,
                         help="Comma-separated model names (default: all)")
     parser.add_argument("--quick", action="store_true",
-                        help="Skip long audio tests (only 6s and 30s)")
+                        help="Fewer warmup/repeat runs for faster iteration")
     args = parser.parse_args()
 
     if not os.path.exists(SWIFT_CLI):
@@ -294,8 +294,6 @@ def main():
 
     # Prepare audio files
     audio_files = ensure_audio_files()
-    if args.quick:
-        audio_files = {k: v for k, v in audio_files.items() if k <= 30}
 
     synth_files = get_synthetic_files()
     print(f"Benchmarking {len(model_names)} models on {len(audio_files)} audio lengths"
@@ -346,7 +344,7 @@ def main():
 
         # 4. WER on synthetic audio
         wer_result = None
-        if synth_files and not args.quick:
+        if synth_files:
             print(f"  WER (synthetic)...", end="", flush=True)
             wer_result = bench_wer(model_name, model_path, synth_files)
             if wer_result:

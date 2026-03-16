@@ -1,0 +1,62 @@
+{
+  "benchmark": "moonshine-mlx-suite",
+  "timestamp": "2026-03-16T20:03:14",
+  "platform": "macOS-15.7.1-arm64-arm-64bit-Mach-O",
+  "swift_cli": "/Users/kylehowells/Developer/Github/moonshine-mlx/.build/arm64-apple-macosx/release/moonshine-mlx",
+  "results": [
+    {
+      "model": "tiny-fp32",
+      "description": "Tiny fp32 (HuggingFace)",
+      "parameters_millions": 34,
+      "model_size_mb": 0,
+      "cold_start": {
+        "wall_time_s": 1.73,
+        "inference_time_s": 0.1216,
+        "model_load_time_s": 1.5804,
+        "tokens": 18,
+        "peak_memory_mb": 255.8
+      },
+      "steady_state_6s": {
+        "transcription_time_s": 0.12,
+        "tokens": 18.0,
+        "tokens_per_second": 154.57,
+        "peak_memory_mb": 255.8
+      },
+      "audio_lengths": {
+        "6": {
+          "audio_duration_s": 6,
+          "transcription_time_s": 0.1019,
+          "tokens": 18,
+          "tokens_per_second": 176.68,
+          "peak_memory_mb": 255.8,
+          "real_time_factor": 0.017
+        },
+        "30": {
+          "audio_duration_s": 30,
+          "transcription_time_s": 0.6712,
+          "tokens": 111,
+          "tokens_per_second": 165.38,
+          "peak_memory_mb": 863.5,
+          "real_time_factor": 0.0224
+        },
+        "60": {
+          "audio_duration_s": 60,
+          "transcription_time_s": 0.7917,
+          "tokens": 216,
+          "tokens_per_second": 272.83,
+          "peak_memory_mb": 865.4,
+          "real_time_factor": 0.0132
+        },
+        "600": {
+          "audio_duration_s": 600,
+          "transcription_time_s": 5.4347,
+          "tokens": 2115,
+          "tokens_per_second": 389.17,
+          "peak_memory_mb": 900,
+          "real_time_factor": 0.0091
+        }
+      },
+      "wer": null
+    }
+  ]
+}
