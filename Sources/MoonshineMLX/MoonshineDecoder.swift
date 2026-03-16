@@ -60,22 +60,22 @@ final class MoonshineDecoder: Module, @unchecked Sendable {
     ) -> Output {
         var x = embed_tokens(tokens)
 
-        let layerCache = cache ?? layers.map { _ in DecoderLayerCache() }
-        var newCache: [DecoderLayerCache] = []
+        let layerCache = cache ?? [DecoderLayerCache](repeating: DecoderLayerCache(), count: layers.count)
+        var newCache = [DecoderLayerCache](repeating: DecoderLayerCache(), count: layers.count)
         var crossQKAll: [[MLXArray]]? = returnCrossQK ? [] : nil
 
-        for (i, layer) in layers.enumerated() {
-            let result = layer(
+        for i in 0 ..< layers.count {
+            let result = layers[i](
                 x, memory: memory,
                 selfCache: layerCache[i].selfCache,
                 crossCache: layerCache[i].crossCache,
                 returnCrossWeights: returnCrossQK
             )
             x = result.hidden
-            newCache.append(DecoderLayerCache(
+            newCache[i] = DecoderLayerCache(
                 selfCache: result.selfCache,
                 crossCache: result.crossCache
-            ))
+            )
             if returnCrossQK, let qk = result.crossQK {
                 crossQKAll?.append([qk])
             }
