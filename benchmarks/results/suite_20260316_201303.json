@@ -1,6 +1,6 @@
 {
   "benchmark": "moonshine-mlx-suite",
-  "timestamp": "2026-03-16T20:24:32",
+  "timestamp": "2026-03-16T20:13:03",
   "platform": "macOS-15.7.1-arm64-arm-64bit-Mach-O",
   "swift_cli": "/Users/kylehowells/Developer/Github/moonshine-mlx/.build/arm64-apple-macosx/release/moonshine-mlx",
   "results": [
@@ -10,50 +10,50 @@
       "parameters_millions": 34,
       "model_size_mb": 0,
       "cold_start": {
-        "wall_time_s": 1.755,
-        "inference_time_s": 0.1018,
-        "model_load_time_s": 1.6219,
+        "wall_time_s": 1.773,
+        "inference_time_s": 0.1305,
+        "model_load_time_s": 1.6147,
         "tokens": 18,
         "peak_memory_mb": 255.8
       },
       "steady_state_6s": {
-        "transcription_time_s": 0.12,
+        "transcription_time_s": 0.14,
         "tokens": 18.0,
-        "tokens_per_second": 155.76,
+        "tokens_per_second": 127.94,
         "peak_memory_mb": 255.8
       },
       "audio_lengths": {
         "6": {
           "audio_duration_s": 6,
-          "transcription_time_s": 0.0996,
+          "transcription_time_s": 0.1364,
           "tokens": 18,
-          "tokens_per_second": 180.79,
+          "tokens_per_second": 131.94,
           "peak_memory_mb": 255.8,
-          "real_time_factor": 0.0166
+          "real_time_factor": 0.0227
         },
         "30": {
           "audio_duration_s": 30,
-          "transcription_time_s": 0.337,
+          "transcription_time_s": 0.5058,
           "tokens": 111,
-          "tokens_per_second": 329.35,
+          "tokens_per_second": 219.47,
           "peak_memory_mb": 863.5,
-          "real_time_factor": 0.0112
+          "real_time_factor": 0.0169
         },
         "60": {
           "audio_duration_s": 60,
-          "transcription_time_s": 0.6034,
+          "transcription_time_s": 0.9009,
           "tokens": 216,
-          "tokens_per_second": 357.96,
+          "tokens_per_second": 239.77,
           "peak_memory_mb": 865.4,
-          "real_time_factor": 0.0101
+          "real_time_factor": 0.015
         },
         "600": {
           "audio_duration_s": 600,
-          "transcription_time_s": 5.3826,
+          "transcription_time_s": 7.9161,
           "tokens": 2115,
-          "tokens_per_second": 392.93,
+          "tokens_per_second": 267.18,
           "peak_memory_mb": 900,
-          "real_time_factor": 0.009
+          "real_time_factor": 0.0132
         }
       },
       "wer": {

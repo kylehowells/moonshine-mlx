@@ -14,7 +14,78 @@ final class MoonshineKernelFusion: @unchecked Sendable {
     // Fused CMVN + Asinh + SiLU kernel (float16)
     private let fusedFrontendF16: MLXFast.MLXFastKernel
 
+    // Fused residual add + LayerNorm (float32)
+    // Input: x [N, D], sublayer [N, D], weight [D]
+    // Output: residual [N, D] = x + sublayer, normed [N, D] = layernorm(residual)
+    private let fusedResidualLayerNormF32: MLXFast.MLXFastKernel
+
     private init() {
+        // Fused residual add + LayerNorm with parallel reduction.
+        // One threadgroup per row (position), TG_SIZE threads per threadgroup.
+        // Each thread handles D/TG_SIZE elements, then parallel reduction for mean/var.
+        fusedResidualLayerNormF32 = MLXFast.metalKernel(
+            name: "moonshine_fused_residual_layernorm_f32",
+            inputNames: ["x", "sublayer", "weight"],
+            outputNames: ["residual", "normed"],
+            source: """
+                // thread_position_in_grid = (tid_in_threadgroup, row, 0)
+                uint tid = thread_position_in_threadgroup.x;
+                uint tg_size = threads_per_threadgroup.x;
+                uint row = threadgroup_position_in_grid.x;
+                uint D = x_shape[x_ndim - 1];
+                uint N = 1;
+                for (uint i = 0; i < x_ndim - 1; i++) N *= x_shape[i];
+                if (row >= N) return;
+
+                uint base = row * D;
+                float eps = 1e-5f;
+
+                // Shared memory for reduction
+                threadgroup float shared_sum[256];
+                threadgroup float shared_var[256];
+
+                // Pass 1: residual add + partial sum
+                float local_sum = 0.0f;
+                for (uint d = tid; d < D; d += tg_size) {
+                    float r = x[base + d] + sublayer[base + d];
+                    residual[base + d] = r;
+                    local_sum += r;
+                }
+                shared_sum[tid] = local_sum;
+                threadgroup_barrier(mem_flags::mem_threadgroup);
+
+                // Parallel reduction for mean
+                for (uint s = tg_size / 2; s > 0; s >>= 1) {
+                    if (tid < s) shared_sum[tid] += shared_sum[tid + s];
+                    threadgroup_barrier(mem_flags::mem_threadgroup);
+                }
+                float mean = shared_sum[0] / (float)D;
+                threadgroup_barrier(mem_flags::mem_threadgroup);
+
+                // Pass 2: partial variance
+                float local_var = 0.0f;
+                for (uint d = tid; d < D; d += tg_size) {
+                    float diff = residual[base + d] - mean;
+                    local_var += diff * diff;
+                }
+                shared_var[tid] = local_var;
+                threadgroup_barrier(mem_flags::mem_threadgroup);
+
+                // Parallel reduction for variance
+                for (uint s = tg_size / 2; s > 0; s >>= 1) {
+                    if (tid < s) shared_var[tid] += shared_var[tid + s];
+                    threadgroup_barrier(mem_flags::mem_threadgroup);
+                }
+                float inv_std = rsqrt(shared_var[0] / (float)D + eps);
+
+                // Pass 3: normalize with weight
+                for (uint d = tid; d < D; d += tg_size) {
+                    normed[base + d] = (residual[base + d] - mean) * inv_std * weight[d];
+                }
+            """,
+            ensureRowContiguous: true
+        )
+
         // Fused SiLU-gated linear unit: out[i] = silu(x[i + half]) * x[i]
         fusedSwiGLUGateF32 = MLXFast.metalKernel(
             name: "moonshine_swiglu_gate_f32",
@@ -138,6 +209,32 @@ final class MoonshineKernelFusion: @unchecked Sendable {
             outputShapes: [frames.shape],
             outputDTypes: [frames.dtype]
         )[0]
+    }
+
+    // MARK: - Fused Residual + LayerNorm
+
+    /// Fused residual add + LayerNorm.
+    /// Computes: residual = x + sublayer; normed = layernorm(residual, weight)
+    /// Returns (residual, normed) — saving one GPU dispatch vs separate ops.
+    func fusedResidualLayerNorm(
+        x: MLXArray, sublayer: MLXArray, weight: MLXArray
+    ) -> (residual: MLXArray, normed: MLXArray)? {
+        guard x.dtype == .float32, x.shape == sublayer.shape else { return nil }
+        let shape = x.shape
+        // Total rows = product of all dims except last
+        let N = shape.dropLast().reduce(1, *)
+        let D = shape.last!
+
+        // One threadgroup per row, 128 threads per threadgroup for parallel reduction
+        let tgSize = min(128, D)
+        let results = fusedResidualLayerNormF32(
+            [x, sublayer, weight],
+            grid: (tgSize * N, 1, 1),
+            threadGroup: (tgSize, 1, 1),
+            outputShapes: [shape, shape],
+            outputDTypes: [x.dtype, x.dtype]
+        )
+        return (results[0], results[1])
     }
 
     // MARK: - Fused SiLU-Gated Linear (for SwiGLU FFN)
