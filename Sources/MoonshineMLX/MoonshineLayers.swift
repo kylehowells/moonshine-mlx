@@ -16,6 +16,10 @@ final class MoonshineAttention: Module, @unchecked Sendable {
     let rotary_ndims: Int
     let ropeBase: Float
 
+    /// If true, store KV cache in float16 to reduce memory bandwidth.
+    /// SDPA accumulates in higher precision internally so this is safe.
+    var kvCacheFloat16: Bool = false
+
     @ModuleInfo var q_proj: Linear
     @ModuleInfo var k_proj: Linear
     @ModuleInfo var v_proj: Linear
@@ -106,11 +110,25 @@ final class MoonshineAttention: Module, @unchecked Sendable {
             }
         }
 
-        var kExpanded = k
-        var vExpanded = v
+        // Optionally store cache in fp16 to reduce memory bandwidth
+        let kCache = kvCacheFloat16 ? k.asType(.float16) : k
+        let vCache = kvCacheFloat16 ? v.asType(.float16) : v
+
+        // For attention computation, ensure Q/K/V dtypes match
+        var kForAttn = k
+        var vForAttn = v
+        if kvCacheFloat16 && k.dtype == .float16 {
+            // Q is fp32 from projection; cast K/V back for attention
+            // (SDPA accumulates in higher precision internally)
+            kForAttn = k.asType(q.dtype)
+            vForAttn = v.asType(q.dtype)
+        }
+
+        var kExpanded = kForAttn
+        var vExpanded = vForAttn
         if num_kv_groups > 1 {
-            kExpanded = MLX.repeated(k, count: num_kv_groups, axis: 1)
-            vExpanded = MLX.repeated(v, count: num_kv_groups, axis: 1)
+            kExpanded = MLX.repeated(kForAttn, count: num_kv_groups, axis: 1)
+            vExpanded = MLX.repeated(vForAttn, count: num_kv_groups, axis: 1)
         }
 
         var attnMask = mask
@@ -146,7 +164,7 @@ final class MoonshineAttention: Module, @unchecked Sendable {
         }
 
         let out = o.transposed(0, 2, 1, 3).reshaped(B, T, -1)
-        return Output(output: o_proj(out), keyCache: k, valueCache: v, crossQK: crossQK)
+        return Output(output: o_proj(out), keyCache: kCache, valueCache: vCache, crossQK: crossQK)
     }
 }
 

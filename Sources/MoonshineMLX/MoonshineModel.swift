@@ -51,6 +51,17 @@ public final class MoonshineModel: Module, @unchecked Sendable {
             layer.post_attention_layernorm.prepareForInference()
         }
         encoder.final_norm.prepareForInference()
+
+        // Enable fp16 KV cache for reduced memory bandwidth
+        enableFloat16KVCache(true)
+    }
+
+    /// Toggle fp16 KV cache on all attention layers.
+    public func enableFloat16KVCache(_ enabled: Bool) {
+        for layer in decoder.layers {
+            layer.self_attn.kvCacheFloat16 = enabled
+            layer.encoder_attn.kvCacheFloat16 = enabled
+        }
     }
 
     // MARK: - Logits
