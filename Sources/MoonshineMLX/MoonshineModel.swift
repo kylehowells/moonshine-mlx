@@ -111,79 +111,98 @@ public final class MoonshineModel: Module, @unchecked Sendable {
 
     // MARK: - Offline (Batch) Generation
 
+    /// Transcribe audio of any length.
+    ///
+    /// Audio is processed in `chunkDuration`-second segments through the
+    /// batch encoder (full sliding-window attention per chunk). Each chunk
+    /// is encoded and decoded independently - matching the Python reference.
     public func generate(
         audio: MLXArray,
         maxTokens: Int = Int.max,
         temperature: Float = 0.0,
+        chunkDuration: Double = 30.0,
         profile: Bool = false
     ) -> TranscriptionOutput {
-        let start = CFAbsoluteTimeGetCurrent()
+        let startTime = CFAbsoluteTimeGetCurrent()
 
         var input = audio
-        if input.ndim != 1 {
-            input = input.squeezed()
+        if input.ndim != 1 { input = input.squeezed() }
+
+        let totalSamples = input.dim(0)
+        let dur = Double(totalSamples) / Double(sampleRate)
+        let chunkSamples = Int(chunkDuration * Double(sampleRate))
+
+        var allText: [String] = []
+        var totalTokens = 0
+        var tEncodeTotal = 0.0
+        var tDecodeTotal = 0.0
+
+        for offset in stride(from: 0, to: totalSamples, by: chunkSamples) {
+            let end = min(offset + chunkSamples, totalSamples)
+            let chunk = input[offset ..< end]
+
+            let (text, nTok, tEnc, tDec) = encodeAndDecodeChunk(
+                chunk, maxTokens: maxTokens, temperature: temperature
+            )
+            if !text.isEmpty { allText.append(text) }
+            totalTokens += nTok
+            tEncodeTotal += tEnc
+            tDecodeTotal += tDec
         }
 
-
-        // Encode
-        let features = encoder.embedder(input)
-        eval(features)
-        let encoded = encoder(features)
-        eval(encoded)
-        let memory = decoder.prepareMemory(encoded)
-        eval(memory)
-        let tEncode = CFAbsoluteTimeGetCurrent() - start
+        let fullText = allText.joined(separator: " ").trimmingCharacters(in: .whitespaces)
+        let elapsed = CFAbsoluteTimeGetCurrent() - startTime
 
         if profile {
-            let hasNanF = MLX.any(MLX.isNaN(features)).item(Bool.self)
-            let hasNanE = MLX.any(MLX.isNaN(encoded)).item(Bool.self)
-            let hasNanM = MLX.any(MLX.isNaN(memory)).item(Bool.self)
-            FileHandle.standardError.write(Data("  features: \(features.shape) nan=\(hasNanF) range=[\(features.min().item(Float.self)),\(features.max().item(Float.self))]\n  encoded: \(encoded.shape) nan=\(hasNanE) range=[\(encoded.min().item(Float.self)),\(encoded.max().item(Float.self))]\n  memory: \(memory.shape) nan=\(hasNanM) range=[\(memory.min().item(Float.self)),\(memory.max().item(Float.self))]\n".utf8))
-            // Check decoder components
-            let T = memory.dim(1)
-            let testTok = MLXArray(Int32(config.decoderStartTokenId)).reshaped(1, 1)
-            let emb = decoder.embed_tokens(testTok)
-            eval(emb)
-            let embNan = MLX.any(MLX.isNaN(emb)).item(Bool.self)
-            // First decoder layer
-            let firstLayerResult = decoder.layers[0](emb, memory: memory)
-            eval(firstLayerResult.hidden)
-            let l0Nan = MLX.any(MLX.isNaN(firstLayerResult.hidden)).item(Bool.self)
-            let l0Range = "[\(firstLayerResult.hidden.min().item(Float.self)),\(firstLayerResult.hidden.max().item(Float.self))]"
-            FileHandle.standardError.write(Data("  embed: nan=\(embNan)  layer0: nan=\(l0Nan) range=\(l0Range)\n".utf8))
+            FileHandle.standardError.write(Data("""
+            PROFILE (Swift MLX):
+              Encode:      \(String(format: "%7.1f", tEncodeTotal * 1000))ms
+              Decode:      \(String(format: "%7.1f", tDecodeTotal * 1000))ms (\(totalTokens) tokens)
+              Total:       \(String(format: "%7.1f", elapsed * 1000))ms
+              Tokens: \(totalTokens), RTF: \(String(format: "%.4f", elapsed / dur))x\n
+            """.utf8))
         }
 
-        let dur = Double(input.dim(0)) / Double(sampleRate)
-        let maxTok = min(maxTokens, Int(ceil(dur * config.maxTokensPerSecond)))
+        return TranscriptionOutput(
+            text: fullText,
+            segments: [TranscriptionSegment(text: fullText, start: 0.0, end: dur, words: nil)],
+            generationTokens: totalTokens,
+            totalTime: elapsed,
+            tokensPerSecond: elapsed > 0 ? Double(totalTokens) / elapsed : 0
+        )
+    }
 
-        // First token (sync)
+    /// Encode + decode a single audio chunk. Returns (text, tokenCount, encodeTime, decodeTime).
+    private func encodeAndDecodeChunk(
+        _ audio: MLXArray, maxTokens: Int, temperature: Float
+    ) -> (String, Int, Double, Double) {
+        var input = audio
+        if input.ndim == 1 { input = input.expandedDimensions(axis: 0) }
+
+        let t0 = CFAbsoluteTimeGetCurrent()
+        let features = encoder.embedder(input)
+        let encoded = encoder(features)
+        let memory = decoder.prepareMemory(encoded)
+        eval(memory)
+        let tEncode = CFAbsoluteTimeGetCurrent() - t0
+
+        let dur = Double(audio.dim(audio.ndim - 1)) / Double(sampleRate)
+        let limit = min(maxTokens, Int(ceil(dur * config.maxTokensPerSecond)))
+
+        let t1 = CFAbsoluteTimeGetCurrent()
         var tokens: [Int] = [config.decoderStartTokenId]
         var cache: [DecoderLayerCache]? = nil
 
-        let tFirstStart = CFAbsoluteTimeGetCurrent()
         var tok = MLXArray(Int32(tokens.last!)).reshaped(1, 1)
         var result = decoder(tok, memory: memory, cache: cache)
         cache = result.cache
         var logits = getLogits(result.hidden)
-        var nextTokArr: MLXArray
-        if temperature > 0 {
-            nextTokArr = MLXRandom.categorical(logits / temperature)
-        } else {
-            nextTokArr = argMax(logits, axis: -1)
-        }
+        var nextTokArr = temperature > 0
+            ? MLXRandom.categorical(logits / temperature)
+            : argMax(logits, axis: -1)
         eval(nextTokArr)
-        let tFirst = CFAbsoluteTimeGetCurrent() - tFirstStart
 
-        if profile {
-            let firstTok = nextTokArr.item(Int.self)
-            let logMin = logits.min().item(Float.self)
-            let logMax = logits.max().item(Float.self)
-            FileHandle.standardError.write(Data("  first_token_id=\(firstTok) logits=[\(logMin),\(logMax)]\n".utf8))
-        }
-
-        // Remaining tokens with async eval pipelining
-        let tDecodeStart = CFAbsoluteTimeGetCurrent()
-        for _ in 0 ..< (maxTok - 1) {
+        for _ in 0 ..< (limit - 1) {
             let nt = nextTokArr.item(Int.self)
             if nt == config.eosTokenId { break }
             tokens.append(nt)
@@ -192,49 +211,18 @@ public final class MoonshineModel: Module, @unchecked Sendable {
             result = decoder(tok, memory: memory, cache: cache)
             cache = result.cache
             logits = getLogits(result.hidden)
-            if temperature > 0 {
-                nextTokArr = MLXRandom.categorical(logits / temperature)
-            } else {
-                nextTokArr = argMax(logits, axis: -1)
-            }
+            nextTokArr = temperature > 0
+                ? MLXRandom.categorical(logits / temperature)
+                : argMax(logits, axis: -1)
             asyncEval(nextTokArr)
         }
 
         let nt = nextTokArr.item(Int.self)
-        if nt != config.eosTokenId {
-            tokens.append(nt)
-        }
-        let tDecode = CFAbsoluteTimeGetCurrent() - tDecodeStart
+        if nt != config.eosTokenId { tokens.append(nt) }
+        let tDecode = CFAbsoluteTimeGetCurrent() - t1
 
         let gen = Array(tokens.dropFirst())
-        let text = decodeTokens(gen)
-        let elapsed = CFAbsoluteTimeGetCurrent() - start
-
-        if profile {
-            let restTokens = max(gen.count - 1, 1)
-            let decTPS = tDecode > 0 ? Double(restTokens) / tDecode : 0
-            let perTok = tDecode / Double(restTokens) * 1000
-            FileHandle.standardError.write(Data("""
-            PROFILE (Swift MLX):
-              Encode:      \(String(format: "%7.1f", tEncode * 1000))ms
-              First token: \(String(format: "%7.1f", tFirst * 1000))ms
-              Decode rest: \(String(format: "%7.1f", tDecode * 1000))ms (\(restTokens) tokens, \(String(format: "%.0f", decTPS)) tok/s)
-              Total:       \(String(format: "%7.1f", elapsed * 1000))ms
-              Per-token:   \(String(format: "%.2f", perTok))ms
-              Tokens: \(gen.count), RTF: \(String(format: "%.4f", elapsed / dur))x\n
-            """.utf8))
-        }
-
-        return TranscriptionOutput(
-            text: text.trimmingCharacters(in: .whitespaces),
-            segments: [TranscriptionSegment(
-                text: text.trimmingCharacters(in: .whitespaces),
-                start: 0.0, end: dur, words: nil
-            )],
-            generationTokens: gen.count,
-            totalTime: elapsed,
-            tokensPerSecond: elapsed > 0 ? Double(gen.count) / elapsed : 0
-        )
+        return (decodeTokens(gen), gen.count, tEncode, tDecode)
     }
 
     // MARK: - Word-Level Timestamps

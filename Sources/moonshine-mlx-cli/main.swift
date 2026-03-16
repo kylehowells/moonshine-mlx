@@ -74,13 +74,8 @@ struct MoonshineCLI: ParsableCommand {
                 printErr(String(format: "Audio: %.1fs, %d samples", duration, audio.dim(0)))
             }
 
-            // Use generateLong for audio over 30s (rolling window, bounded memory)
-            let useLong = duration > 30.0 && !stream && !wordTimestamps && !json
-
             if stream {
                 try transcribeStreaming(moonshine: moonshine, audio: audio, duration: duration)
-            } else if useLong {
-                transcribeLong(moonshine: moonshine, audio: audio, duration: duration)
             } else if wordTimestamps {
                 transcribeWithTimestamps(moonshine: moonshine, audio: audio, duration: duration)
             } else if json {
