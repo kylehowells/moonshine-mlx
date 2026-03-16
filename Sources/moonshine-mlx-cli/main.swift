@@ -41,6 +41,9 @@ struct MoonshineCLI: ParsableCommand {
     @Flag(name: .long, help: "Output JSON metrics (for benchmarking).")
     var json: Bool = false
 
+    @Flag(name: .long, help: "Print profiling breakdown (encode/decode/per-token).")
+    var profile: Bool = false
+
     func run() throws {
         // Load model
         let loadStart = CFAbsoluteTimeGetCurrent()
@@ -94,7 +97,8 @@ struct MoonshineCLI: ParsableCommand {
         let result = moonshine.generate(
             audio: audio,
             maxTokens: maxTokens,
-            temperature: temperature
+            temperature: temperature,
+            profile: profile
         )
 
         print(result.text)

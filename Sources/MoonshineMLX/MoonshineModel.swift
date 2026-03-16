@@ -93,7 +93,8 @@ public final class MoonshineModel: Module, @unchecked Sendable {
     public func generate(
         audio: MLXArray,
         maxTokens: Int = 500,
-        temperature: Float = 0.0
+        temperature: Float = 0.0,
+        profile: Bool = false
     ) -> TranscriptionOutput {
         let start = CFAbsoluteTimeGetCurrent()
 
@@ -102,20 +103,21 @@ public final class MoonshineModel: Module, @unchecked Sendable {
             input = input.squeezed()
         }
 
-        // Encode (single fused eval for entire pipeline)
+        // Encode
         let features = encoder.embedder(input)
         let encoded = encoder(features)
         let memory = decoder.prepareMemory(encoded)
         eval(memory)
+        let tEncode = CFAbsoluteTimeGetCurrent() - start
 
         let dur = Double(input.dim(0)) / Double(sampleRate)
         let maxTok = min(maxTokens, Int(ceil(dur * config.maxTokensPerSecond)))
 
-        // Greedy decode with compiled step + async eval pipelining
+        // First token (sync)
         var tokens: [Int] = [config.decoderStartTokenId]
         var cache: [DecoderLayerCache]? = nil
 
-        // First token (sync to prime the cache)
+        let tFirstStart = CFAbsoluteTimeGetCurrent()
         var tok = MLXArray(Int32(tokens.last!)).reshaped(1, 1)
         var result = decoder(tok, memory: memory, cache: cache)
         cache = result.cache
@@ -127,8 +129,10 @@ public final class MoonshineModel: Module, @unchecked Sendable {
             nextTokArr = argMax(logits, axis: -1)
         }
         eval(nextTokArr)
+        let tFirst = CFAbsoluteTimeGetCurrent() - tFirstStart
 
         // Remaining tokens with async eval pipelining
+        let tDecodeStart = CFAbsoluteTimeGetCurrent()
         for _ in 0 ..< (maxTok - 1) {
             let nt = nextTokArr.item(Int.self)
             if nt == config.eosTokenId { break }
@@ -146,15 +150,30 @@ public final class MoonshineModel: Module, @unchecked Sendable {
             asyncEval(nextTokArr)
         }
 
-        // Collect final token
         let nt = nextTokArr.item(Int.self)
         if nt != config.eosTokenId {
             tokens.append(nt)
         }
+        let tDecode = CFAbsoluteTimeGetCurrent() - tDecodeStart
 
         let gen = Array(tokens.dropFirst())
         let text = decodeTokens(gen)
         let elapsed = CFAbsoluteTimeGetCurrent() - start
+
+        if profile {
+            let restTokens = max(gen.count - 1, 1)
+            let decTPS = tDecode > 0 ? Double(restTokens) / tDecode : 0
+            let perTok = tDecode / Double(restTokens) * 1000
+            FileHandle.standardError.write(Data("""
+            PROFILE (Swift MLX):
+              Encode:      \(String(format: "%7.1f", tEncode * 1000))ms
+              First token: \(String(format: "%7.1f", tFirst * 1000))ms
+              Decode rest: \(String(format: "%7.1f", tDecode * 1000))ms (\(restTokens) tokens, \(String(format: "%.0f", decTPS)) tok/s)
+              Total:       \(String(format: "%7.1f", elapsed * 1000))ms
+              Per-token:   \(String(format: "%.2f", perTok))ms
+              Tokens: \(gen.count), RTF: \(String(format: "%.4f", elapsed / dur))x\n
+            """.utf8))
+        }
 
         return TranscriptionOutput(
             text: text.trimmingCharacters(in: .whitespaces),

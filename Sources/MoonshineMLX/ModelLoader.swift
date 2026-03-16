@@ -62,6 +62,11 @@ public enum MoonshineModelLoader {
         }
         model.tokenizer = tokenizer
 
+        // Warmup: run a tiny forward pass to compile Metal shaders
+        // This moves shader compilation cost from first inference to load time.
+        let warmupAudio = MLXArray.zeros([config.encoder.sampleRate])  // 1 second of silence
+        _ = model.generate(audio: warmupAudio, maxTokens: 1)
+
         return model
     }
 

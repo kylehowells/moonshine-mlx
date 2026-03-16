@@ -3,55 +3,7 @@ import MLX
 import MLXNN
 import MLXFast
 
-// MARK: - Rotary Embeddings (decoder self-attention)
-
-final class RotaryEmbedding: Module, @unchecked Sendable {
-    let dim: Int
-    let base: Float
-
-    init(dim: Int, base: Float = 10000.0) {
-        self.dim = dim
-        self.base = base
-    }
-
-    func callAsFunction(positionIds: MLXArray) -> (cos: MLXArray, sin: MLXArray) {
-        let invFreq = 1.0 / MLX.pow(
-            MLXArray(base),
-            MLXArray(stride(from: 0, to: dim, by: 2).map { Float($0) / Float(dim) })
-        )
-        let ids = positionIds.expandedDimensions(axis: -1).asType(.float32)
-        let freq = invFreq.reshaped(1, 1, -1)
-        let freqs = ids * freq
-        let emb = concatenated([freqs, freqs], axis: -1)
-        return (MLX.cos(emb), MLX.sin(emb))
-    }
-}
-
-private func rotateHalf(_ x: MLXArray) -> MLXArray {
-    let x1 = x[.ellipsis, .stride(from: 0, by: 2)]
-    let x2 = x[.ellipsis, .stride(from: 1, by: 2)]
-    return stacked([-x2, x1], axis: -1).reshaped(x.shape)
-}
-
-private func applyRotaryPosEmb(
-    q: MLXArray, k: MLXArray, cos: MLXArray, sin: MLXArray
-) -> (MLXArray, MLXArray) {
-    var c = cos.expandedDimensions(axis: 1)
-    var s = sin.expandedDimensions(axis: 1)
-    let half = c.dim(-1) / 2
-    c = MLX.repeated(c[.ellipsis, ..<half], count: 2, axis: -1)
-    s = MLX.repeated(s[.ellipsis, ..<half], count: 2, axis: -1)
-    let rotDim = c.dim(-1)
-    let qRot = q[.ellipsis, ..<rotDim]
-    let qPass = q[.ellipsis, rotDim...]
-    let kRot = k[.ellipsis, ..<rotDim]
-    let kPass = k[.ellipsis, rotDim...]
-    let qOut = qRot * c + rotateHalf(qRot) * s
-    let kOut = kRot * c + rotateHalf(kRot) * s
-    return (concatenated([qOut, qPass], axis: -1), concatenated([kOut, kPass], axis: -1))
-}
-
-// MARK: - Attention
+// MARK: - Attention (uses MLXFast.RoPE traditional=true + scaledDotProductAttention)
 
 final class MoonshineAttention: Module, @unchecked Sendable {
     let num_heads: Int
@@ -62,13 +14,12 @@ final class MoonshineAttention: Module, @unchecked Sendable {
     let scale: Float
     let use_rope: Bool
     let rotary_ndims: Int
+    let ropeBase: Float
 
     let q_proj: Linear
     let k_proj: Linear
     let v_proj: Linear
     let o_proj: Linear
-
-    var rotary_emb: RotaryEmbedding?
 
     init(
         inputDim: Int,
@@ -100,11 +51,10 @@ final class MoonshineAttention: Module, @unchecked Sendable {
             var nd = Int(Double(headDim) * partialRotaryFactor)
             nd -= nd % 2
             self.rotary_ndims = nd
-            self.rotary_emb = RotaryEmbedding(dim: nd, base: Float(ropeTheta))
         } else {
             self.rotary_ndims = 0
-            self.rotary_emb = nil
         }
+        self.ropeBase = Float(ropeTheta)
     }
 
     struct Output {
@@ -135,11 +85,13 @@ final class MoonshineAttention: Module, @unchecked Sendable {
         k = k.reshaped(B, S, num_kv_heads, head_dim).transposed(0, 2, 1, 3)
         v = v.reshaped(B, S, num_kv_heads, head_dim).transposed(0, 2, 1, 3)
 
+        // Fused RoPE via MLXFast - traditional=true matches this model's convention
         if use_rope && !isCross {
             let offset = cache?.0.dim(2) ?? 0
-            let ids = MLXArray(Int32(offset) ..< Int32(offset + T)).reshaped(1, T)
-            let (cos, sin) = rotary_emb!(positionIds: ids)
-            (q, k) = applyRotaryPosEmb(q: q, k: k, cos: cos, sin: sin)
+            q = MLXFast.RoPE(q, dimensions: rotary_ndims, traditional: true,
+                             base: ropeBase, scale: 1.0, offset: offset)
+            k = MLXFast.RoPE(k, dimensions: rotary_ndims, traditional: true,
+                             base: ropeBase, scale: 1.0, offset: offset)
         }
 
         if let cache {
