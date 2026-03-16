@@ -166,14 +166,23 @@ final class EncoderMLP: Module, @unchecked Sendable {
 final class DecoderMLP: Module, @unchecked Sendable {
     let fc1: Linear
     let fc2: Linear
+    let intermediateSize: Int
 
     init(hiddenSize: Int, intermediateSize: Int) {
+        self.intermediateSize = intermediateSize
         self.fc1 = Linear(hiddenSize, 2 * intermediateSize, bias: true)
         self.fc2 = Linear(intermediateSize, hiddenSize, bias: true)
     }
 
     func callAsFunction(_ x: MLXArray) -> MLXArray {
         let projected = fc1(x)
+        // Try fused SwiGLU kernel (fuses split + silu + multiply into one dispatch)
+        if let fused = MoonshineKernelFusion.shared.fusedSwiGLUGate(
+            projected: projected, intermediateSize: intermediateSize
+        ) {
+            return fc2(fused)
+        }
+        // Fallback
         let splits = split(projected, parts: 2, axis: -1)
         return fc2(silu(splits[1]) * splits[0])
     }

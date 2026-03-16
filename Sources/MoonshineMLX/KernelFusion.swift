@@ -15,6 +15,32 @@ final class MoonshineKernelFusion: @unchecked Sendable {
     private let fusedFrontendF16: MLXFast.MLXFastKernel
 
     private init() {
+        // Fused SiLU-gated linear unit: out[i] = silu(x[i + half]) * x[i]
+        fusedSwiGLUGateF32 = MLXFast.metalKernel(
+            name: "moonshine_swiglu_gate_f32",
+            inputNames: ["projected"],
+            outputNames: ["out"],
+            source: """
+                uint idx = thread_position_in_grid.x;
+                uint B_T = projected_shape[0] * projected_shape[1];
+                uint full_dim = projected_shape[2];
+                uint half_dim = full_dim / 2;
+                uint total = B_T * half_dim;
+                if (idx >= total) return;
+
+                uint bt = idx / half_dim;
+                uint d = idx % half_dim;
+                uint base = bt * full_dim;
+
+                float x_val = projected[base + d];
+                float gate = projected[base + half_dim + d];
+                // silu(gate) = gate * sigmoid(gate)
+                float sig = 1.0f / (1.0f + exp(-gate));
+                out[idx] = x_val * gate * sig;
+            """,
+            ensureRowContiguous: true
+        )
+
         // Fused per-frame CMVN + asinh compression kernel
         // Input: frames [B*T, frame_len], log_k scalar
         // Output: normalized and compressed frames
@@ -111,6 +137,31 @@ final class MoonshineKernelFusion: @unchecked Sendable {
             threadGroup: (tg, 1, 1),
             outputShapes: [frames.shape],
             outputDTypes: [frames.dtype]
+        )[0]
+    }
+
+    // MARK: - Fused SiLU-Gated Linear (for SwiGLU FFN)
+
+    private let fusedSwiGLUGateF32: MLXFast.MLXFastKernel
+
+    /// Fused silu(gate) * x operation for the SwiGLU FFN.
+    /// Input: projected [B, T, 2*intermediate] from fc1
+    /// Output: [B, T, intermediate] = silu(second_half) * first_half
+    func fusedSwiGLUGate(projected: MLXArray, intermediateSize: Int, threadGroupSize: Int = 256) -> MLXArray? {
+        guard projected.dtype == .float32 else { return nil }
+        guard projected.ndim == 3 else { return nil }
+
+        let B = projected.dim(0)
+        let T = projected.dim(1)
+        let total = B * T * intermediateSize
+        let tg = max(32, min(threadGroupSize, 1024))
+
+        return fusedSwiGLUGateF32(
+            [projected],
+            grid: (total, 1, 1),
+            threadGroup: (tg, 1, 1),
+            outputShapes: [[B, T, intermediateSize]],
+            outputDTypes: [projected.dtype]
         )[0]
     }
 }
