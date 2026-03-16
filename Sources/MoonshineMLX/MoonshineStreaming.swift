@@ -6,7 +6,7 @@ import MLXRandom
 
 /// Mutable state for streaming transcription.
 public final class StreamingState: @unchecked Sendable {
-    // Frontend
+    // Frontend (persists across segments - causal conv state)
     var sampleBuffer: MLXArray?
     var sampleLen: Int = 0
     var conv1Buffer: MLXArray?
@@ -19,7 +19,7 @@ public final class StreamingState: @unchecked Sendable {
     // Encoder progress
     var encoderFramesEmitted: Int = 0
 
-    // Positional offset for pos_emb
+    // Positional offset for pos_emb (continuous across segments)
     var posOffset: Int = 0
 
     // Memory [1, M, dec_dim]
@@ -45,7 +45,8 @@ extension MoonshineModel {
         StreamingState(sampleBuffer: MLXArray.zeros([config.encoder.frameLen - 1]))
     }
 
-    /// Start (or restart) a stream, resetting all accumulated state.
+    /// Start (or restart) a stream, resetting accumulated audio and decoder state.
+    /// Frontend convolution buffers are preserved for audio continuity.
     public func startStream(_ state: StreamingState) {
         state.active = true
         state.accumulatedFeatures = nil
@@ -85,8 +86,11 @@ extension MoonshineModel {
     }
 
     /// Transcribe currently accumulated audio.
+    ///
     /// - Parameters:
-    ///   - isFinal: If true, flush all remaining frames (including lookahead).
+    ///   - isFinal: If true, flush all remaining frames (including lookahead)
+    ///     and automatically reset for the next segment. Frontend buffers are
+    ///     preserved so audio continuity is maintained.
     ///   - maxTokens: Maximum tokens to generate.
     ///   - temperature: Sampling temperature (0 = greedy).
     /// - Returns: Transcribed text for the current segment.
@@ -99,6 +103,7 @@ extension MoonshineModel {
         let ec = config.encoder
 
         guard let features = state.accumulatedFeatures, state.accumulatedFeatureCount > 0 else {
+            if isFinal { resetSegment(state) }
             return ""
         }
 
@@ -113,10 +118,14 @@ extension MoonshineModel {
         let newFrames = stable - state.encoderFramesEmitted
 
         if newFrames <= 0 {
+            let result: String
             if state.memoryLen > 0 {
-                return decodeMemory(state, maxTokens: maxTokens, temperature: temperature)
+                result = decodeMemory(state, maxTokens: maxTokens, temperature: temperature)
+            } else {
+                result = ""
             }
-            return ""
+            if isFinal { resetSegment(state) }
+            return result
         }
 
         // Encoder: sliding window with left context
@@ -140,7 +149,27 @@ extension MoonshineModel {
         }
         state.memoryLen = state.memory!.dim(1)
 
-        return decodeMemory(state, maxTokens: maxTokens, temperature: temperature)
+        let text = decodeMemory(state, maxTokens: maxTokens, temperature: temperature)
+
+        if isFinal {
+            resetSegment(state)
+        }
+
+        return text
+    }
+
+    /// Reset decoder and encoder state for the next segment,
+    /// keeping frontend convolution buffers for audio continuity.
+    private func resetSegment(_ state: StreamingState) {
+        state.accumulatedFeatures = nil
+        state.accumulatedFeatureCount = 0
+        state.encoderFramesEmitted = 0
+        state.posOffset = 0
+        state.memory = nil
+        state.memoryLen = 0
+        state.decoderCache = nil
+        // Note: sampleBuffer, conv1Buffer, conv2Buffer are preserved
+        // so the next segment picks up seamlessly from the audio stream.
     }
 
     /// Auto-regressive decode from accumulated memory.
