@@ -277,14 +277,20 @@ def main():
                         help="Comma-separated model names (default: all)")
     parser.add_argument("--quick", action="store_true",
                         help="Fewer warmup/repeat runs for faster iteration")
+    parser.add_argument("--summary", action="store_true",
+                        help="Just print summary table from existing results (no benchmarking)")
     args = parser.parse_args()
+
+    os.makedirs(RESULTS_DIR, exist_ok=True)
+
+    if args.summary:
+        print_summary(RESULTS_DIR)
+        return
 
     if not os.path.exists(SWIFT_CLI):
         print(f"Error: Swift CLI not found at {SWIFT_CLI}")
         print("Run: cd moonshine-mlx && swift build -c release")
         sys.exit(1)
-
-    os.makedirs(RESULTS_DIR, exist_ok=True)
 
     # Select models
     if args.models:
@@ -356,6 +362,9 @@ def main():
                 print(" FAILED")
 
         result = {
+            "benchmark": "moonshine-mlx-suite",
+            "timestamp": time.strftime("%Y-%m-%dT%H:%M:%S"),
+            "platform": platform.platform(),
             "model": model_name,
             "description": description,
             "parameters_millions": params_m,
@@ -366,34 +375,46 @@ def main():
             "wer": wer_result,
         }
         all_results.append(result)
-        print()
 
-    # Save results
-    timestamp = time.strftime("%Y%m%d_%H%M%S")
-    out = {
-        "benchmark": "moonshine-mlx-suite",
-        "timestamp": time.strftime("%Y-%m-%dT%H:%M:%S"),
-        "platform": platform.platform(),
-        "swift_cli": SWIFT_CLI,
-        "results": all_results,
-    }
+        # Save per-model result immediately (survives interrupts)
+        model_file = os.path.join(RESULTS_DIR, f"{model_name}.json")
+        with open(model_file, "w") as f:
+            json.dump(result, f, indent=2)
+        print(f"  → saved to {model_file}\n")
 
-    out_path = os.path.join(RESULTS_DIR, f"suite_{timestamp}.json")
-    with open(out_path, "w") as f:
-        json.dump(out, f, indent=2)
+    # Print summary from all results on disk (not just this run)
+    print_summary(RESULTS_DIR)
 
-    # Also save as latest
-    latest_path = os.path.join(RESULTS_DIR, "suite_latest.json")
-    with open(latest_path, "w") as f:
-        json.dump(out, f, indent=2)
 
-    # Summary table
-    print(f"\n{'='*110}")
-    print(f"{'SUMMARY':^110}")
-    print(f"{'='*110}")
+def print_summary(results_dir):
+    """Load all per-model result files and print a summary table."""
+    all_results = []
+    for f in sorted(os.listdir(results_dir)):
+        if not f.endswith(".json"):
+            continue
+        path = os.path.join(results_dir, f)
+        try:
+            with open(path) as fh:
+                data = json.load(fh)
+            # Skip old combined suite files
+            if "results" in data and isinstance(data["results"], list):
+                continue
+            if "model" not in data:
+                continue
+            all_results.append(data)
+        except Exception:
+            continue
+
+    if not all_results:
+        print("No results found.")
+        return
+
+    print(f"\n{'='*115}")
+    print(f"{'SUMMARY (from ' + str(len(all_results)) + ' result files)':^115}")
+    print(f"{'='*115}")
     print(f"{'Model':<14} {'Params':>6} {'Disk':>6} {'Cold':>7} {'Warm 6s':>8} {'Tok/s':>6} {'Mem':>7}"
-          f" {'30s':>7} {'60s':>7} {'10m':>7} {'WER':>8}")
-    print("-" * 110)
+          f" {'30s':>7} {'60s':>7} {'10m':>7} {'WER':>8} {'Timestamp':>20}")
+    print("-" * 115)
 
     for r in all_results:
         cold_s = f"{r['cold_start']['wall_time_s']:.2f}s" if r.get("cold_start") else "—"
@@ -403,18 +424,25 @@ def main():
 
         t30 = t60 = t600 = "—"
         al = r.get("audio_lengths", {})
-        if 30 in al: t30 = f"{al[30]['transcription_time_s']:.2f}s"
-        if 60 in al: t60 = f"{al[60]['transcription_time_s']:.2f}s"
-        if 600 in al: t600 = f"{al[600]['transcription_time_s']:.2f}s"
+        # JSON serialises int keys as strings
+        if "30" in al or 30 in al:
+            d = al.get("30", al.get(30, {}))
+            t30 = f"{d['transcription_time_s']:.2f}s"
+        if "60" in al or 60 in al:
+            d = al.get("60", al.get(60, {}))
+            t60 = f"{d['transcription_time_s']:.2f}s"
+        if "600" in al or 600 in al:
+            d = al.get("600", al.get(600, {}))
+            t600 = f"{d['transcription_time_s']:.2f}s"
 
         wer_str = r["wer"]["overall_wer_pct"] if r.get("wer") else "—"
+        ts = r.get("timestamp", "")[-19:]  # trim to fit
 
-        print(f"{r['model']:<14} {r['parameters_millions']:>4}M {r.get('model_size_mb',0):>5.0f}M"
+        print(f"{r['model']:<14} {r.get('parameters_millions',0):>4}M {r.get('model_size_mb',0):>5.0f}M"
               f" {cold_s:>7} {warm_ms:>8} {tps:>6} {mem:>7}"
-              f" {t30:>7} {t60:>7} {t600:>7} {wer_str:>8}")
+              f" {t30:>7} {t60:>7} {t600:>7} {wer_str:>8} {ts:>20}")
 
-    print(f"\nResults saved to: {out_path}")
-    print(f"Latest link: {latest_path}")
+    print(f"\nResults directory: {results_dir}")
 
 
 if __name__ == "__main__":
